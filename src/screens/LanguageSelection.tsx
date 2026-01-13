@@ -179,36 +179,38 @@ const LanguageSelection = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.contentWrapper}>
-        {/* Decorative animated circles */}
-        <Animated.View
-          style={[styles.decorCircle1, { transform: [{ translateY: float1 }] }]}
-        />
-        <Animated.View
-          style={[styles.decorCircle2, { transform: [{ translateY: float2 }] }]}
-        />
-        <View style={styles.decorCircle3} />
+      {/* Decorative animated circles */}
+      <Animated.View
+        style={[styles.decorCircle1, { transform: [{ translateY: float1 }] }]}
+      />
+      <Animated.View
+        style={[styles.decorCircle2, { transform: [{ translateY: float2 }] }]}
+      />
+      <View style={styles.decorCircle3} />
 
-        {/* Hero Section */}
-        <Animated.View
-          style={[
-            styles.heroContainer,
-            {
-              transform: [{ scale: heroScale }],
-            },
-          ]}
-        >
-          <View style={styles.heroCard}>
-            <Image
-              source={require('../assets/spash4-Photoroom.png')}
-              style={styles.heroImage}
-              resizeMode="contain"
-            />
+      {/* Hero Section */}
+      <Animated.View
+        style={[
+          styles.heroContainer,
+          {
+            transform: [{ scale: heroScale }],
+          },
+        ]}
+      >
+        <View style={styles.heroCard}>
+          <Image
+            source={require('../assets/vehicle3.png')}
+            style={styles.heroImage}
+            resizeMode="cover"
+          />
+          <View style={styles.heroOverlay}>
             <Text style={styles.heroText}>Fast & Reliable</Text>
           </View>
-        </Animated.View>
+        </View>
+      </Animated.View>
 
-        {/* Content Section */}
+      {/* Content Section */}
+      <View style={styles.contentWrapper}>
         <Animated.View
           style={[
             styles.content,
@@ -260,7 +262,7 @@ const LanguageSelection = () => {
                   activeOpacity={0.8}
                 >
                   <View style={styles.languageIcon}>
-                    <Text style={styles.flagIcon}>🇬🇧</Text>
+                    <Text style={styles.flagIcon}>🇮🇳</Text>
                   </View>
                   <View style={styles.languageInfo}>
                     <Text style={styles.languageName}>English</Text>
@@ -308,19 +310,17 @@ const LanguageSelection = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0F172A',
+    backgroundColor: '#FFFFFF',
   },
-  contentWrapper: {
-    flex: 1,
-    paddingVertical: 20,
-  },
+
+  /* Decorative circles (soft, subtle) */
   decorCircle1: {
     position: 'absolute',
     width: 250,
     height: 250,
     borderRadius: 125,
     backgroundColor: 'rgba(59, 130, 246, 0.08)',
-    top: -100,
+    top: -120,
     right: -80,
   },
   decorCircle2: {
@@ -341,30 +341,47 @@ const styles = StyleSheet.create({
     top: '45%',
     right: -60,
   },
+
+  /* Hero */
   heroContainer: {
     paddingHorizontal: 20,
     paddingTop: 10,
   },
   heroCard: {
-    backgroundColor: '#1E293B',
+    height: 180,
     borderRadius: 16,
-    padding: 20,
-    alignItems: 'center',
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    backgroundColor: '#F8FAFC',
   },
   heroImage: {
     width: '100%',
-    height: 120,
-    marginBottom: 12,
+    height: '100%',
+    position: 'absolute',
+  },
+  heroOverlay: {
+    position: 'absolute',
+    top: 16,
+    left: 16,
+    right: 16,
   },
   heroText: {
     fontSize: 20,
     fontWeight: 'bold',
     color: '#FFFFFF',
+    textShadowColor: 'rgba(0,0,0,0.5)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
+  },
+
+  /* Content */
+  contentWrapper: {
+    flex: 1,
+    paddingHorizontal: 20,
   },
   content: {
     flex: 1,
-    paddingHorizontal: 20,
     justifyContent: 'space-between',
     paddingBottom: 20,
   },
@@ -372,6 +389,8 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
   },
+
+  /* Globe icon */
   iconWrapper: {
     alignItems: 'center',
     marginBottom: 24,
@@ -382,46 +401,50 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: 'rgba(59, 130, 246, 0.4)',
+    backgroundColor: 'rgba(59, 130, 246, 0.25)',
   },
   iconContainer: {
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: '#1E293B',
+    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#334155',
+    borderColor: '#CBD5F5',
   },
   icon: {
     fontSize: 50,
   },
+
+  /* Titles */
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#FFFFFF',
+    color: '#0F172A',
     textAlign: 'center',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#94A3B8',
+    color: '#475569',
     textAlign: 'center',
     lineHeight: 22,
     marginBottom: 40,
   },
+
+  /* Language buttons */
   buttonContainer: {
     gap: 16,
   },
   languageButton: {
-    backgroundColor: '#1E293B',
+    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 20,
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#334155',
+    borderColor: '#E2E8F0',
   },
   languageIcon: {
     width: 50,
@@ -441,18 +464,20 @@ const styles = StyleSheet.create({
   languageName: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: '#0F172A',
     marginBottom: 2,
   },
   languageSubtext: {
     fontSize: 14,
-    color: '#94A3B8',
+    color: '#64748B',
   },
   checkIcon: {
     fontSize: 24,
-    color: '#3B82F6',
+    color: '#2563EB',
     fontWeight: 'bold',
   },
+
+  /* Footer text */
   termsText: {
     fontSize: 11,
     color: '#64748B',
@@ -460,7 +485,7 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
   link: {
-    color: '#3B82F6',
+    color: '#2563EB',
   },
 });
 

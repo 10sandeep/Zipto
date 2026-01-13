@@ -11,6 +11,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   Image,
+  Keyboard,
+  ScrollView,
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
@@ -24,17 +26,46 @@ const OTPVerification = () => {
   const dispatch = useDispatch();
 
   const { mobile } = route.params || { mobile: '' };
+
   const [otp, setOtp] = useState('');
   const [error, setError] = useState('');
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
 
-  // Animation values
+  // Animations
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
   const heroScale = useRef(new Animated.Value(0.9)).current;
+  const heroHeight = useRef(new Animated.Value(180)).current;
   const buttonScale = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // Hero image animation
+    const showSub = Keyboard.addListener('keyboardDidShow', () => {
+      setKeyboardOpen(true);
+      // Reduce hero height when keyboard opens
+      Animated.timing(heroHeight, {
+        toValue: 120,
+        duration: 300,
+        useNativeDriver: false,
+      }).start();
+    });
+
+    const hideSub = Keyboard.addListener('keyboardDidHide', () => {
+      setKeyboardOpen(false);
+      // Restore hero height when keyboard closes
+      Animated.timing(heroHeight, {
+        toValue: 180,
+        duration: 300,
+        useNativeDriver: false,
+      }).start();
+    });
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
+  useEffect(() => {
     Animated.spring(heroScale, {
       toValue: 1,
       friction: 6,
@@ -42,7 +73,6 @@ const OTPVerification = () => {
       useNativeDriver: true,
     }).start();
 
-    // Content fade in
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
@@ -57,7 +87,6 @@ const OTPVerification = () => {
       }),
     ]).start();
 
-    // Button entrance
     setTimeout(() => {
       Animated.spring(buttonScale, {
         toValue: 1,
@@ -73,10 +102,10 @@ const OTPVerification = () => {
       setError('Please enter 4-digit OTP');
       return;
     }
+
     setError('');
     dispatch(loginStart());
 
-    // Simulate API Call
     setTimeout(() => {
       dispatch(
         loginSuccess({
@@ -84,7 +113,6 @@ const OTPVerification = () => {
           token: 'dummy-token',
         }),
       );
-      // RootNavigator will automatically switch to AppNavigator
     }, 1000);
   };
 
@@ -98,114 +126,120 @@ const OTPVerification = () => {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
       >
-        <View style={styles.contentWrapper}>
-          {/* Hero Section */}
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* HERO SECTION */}
           <Animated.View
             style={[
               styles.heroContainer,
-              {
-                transform: [{ scale: heroScale }],
-              },
+              { transform: [{ scale: heroScale }] },
             ]}
           >
-            <View style={styles.heroCard}>
+            <Animated.View style={[styles.heroCard, { height: heroHeight }]}>
               <Image
-                source={require('../assets/spash2-Photoroom.png')}
+                source={require('../assets/hero2.jpg')}
                 style={styles.heroImage}
-                resizeMode="contain"
+                resizeMode="cover"
               />
-              <Text style={styles.heroText}>Fast & Reliable</Text>
-            </View>
+              {/* <View style={styles.heroOverlay}>
+                <Text style={styles.heroText}>Fast & Reliable</Text>
+              </View> */}
+            </Animated.View>
           </Animated.View>
 
-          {/* Content Section */}
-          <Animated.View
-            style={[
-              styles.content,
-              {
-                opacity: fadeAnim,
-                transform: [{ translateY: slideAnim }],
-              },
-            ]}
-          >
-            <View style={styles.formSection}>
-              <Text style={styles.title}>Verify OTP</Text>
-              <Text style={styles.subtitle}>
-                We've sent a 4-digit code to {'\n'}+91 {mobile}
-              </Text>
+          <View style={styles.contentWrapper}>
+            <Animated.View
+              style={[
+                styles.content,
+                {
+                  opacity: fadeAnim,
+                  transform: [{ translateY: slideAnim }],
+                },
+              ]}
+            >
+              <View style={styles.formSection}>
+                <Text style={styles.title}>Verify OTP</Text>
+                <Text style={styles.subtitle}>
+                  We've sent a 4-digit code to {'\n'}+91 {mobile}
+                </Text>
 
-              {/* OTP Input */}
-              <View style={styles.otpContainer}>
-                <Text style={styles.label}>Enter OTP</Text>
-                <View
-                  style={[
-                    styles.otpInputContainer,
-                    error ? styles.inputError : null,
-                  ]}
-                >
-                  <Text style={styles.otpIcon}>🔒</Text>
-                  <TextInput
-                    style={styles.otpInput}
-                    placeholder="0000"
-                    placeholderTextColor="#6B7280"
-                    keyboardType="number-pad"
-                    maxLength={4}
-                    value={otp}
-                    onChangeText={text => {
-                      setOtp(text);
-                      setError('');
-                    }}
-                  />
+                {/* OTP Input */}
+                <View style={styles.otpContainer}>
+                  <Text style={styles.label}>Enter OTP</Text>
+                  <View
+                    style={[
+                      styles.otpInputContainer,
+                      error && styles.inputError,
+                    ]}
+                  >
+                    <Text style={styles.otpIcon}>🔒</Text>
+                    <TextInput
+                      style={styles.otpInput}
+                      placeholder="0000"
+                      placeholderTextColor="#6B7280"
+                      keyboardType="number-pad"
+                      maxLength={4}
+                      value={otp}
+                      onChangeText={text => {
+                        setOtp(text);
+                        setError('');
+                      }}
+                    />
+                  </View>
+                  {error ? <Text style={styles.errorText}>{error}</Text> : null}
                 </View>
-                {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
+                {/* Resend OTP */}
+                <TouchableOpacity
+                  onPress={handleResendOTP}
+                  style={styles.resendButton}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.resendText}>
+                    Didn't receive code?{' '}
+                    <Text style={styles.resendLink}>Resend OTP</Text>
+                  </Text>
+                </TouchableOpacity>
+
+                {/* Verify Button */}
+                <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
+                  <TouchableOpacity
+                    style={styles.verifyButton}
+                    onPress={handleVerify}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.verifyButtonText}>
+                      Verify & Continue
+                    </Text>
+                    <Text style={styles.arrow}>→</Text>
+                  </TouchableOpacity>
+                </Animated.View>
+
+                {/* Back - Only show when keyboard is closed */}
+                {!keyboardOpen && (
+                  <TouchableOpacity
+                    onPress={() => navigation.goBack()}
+                    style={styles.backButton}
+                  >
+                    <Text style={styles.backText}>← Back to Login</Text>
+                  </TouchableOpacity>
+                )}
               </View>
 
-              {/* Resend OTP */}
-              <TouchableOpacity
-                onPress={handleResendOTP}
-                style={styles.resendButton}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.resendText}>
-                  Didn't receive code?{' '}
-                  <Text style={styles.resendLink}>Resend OTP</Text>
+              {/* Terms - Only show when keyboard is closed */}
+              {!keyboardOpen && (
+                <Text style={styles.termsText}>
+                  By continuing, you agree to our{' '}
+                  <Text style={styles.link}>Terms of Service</Text> and{' '}
+                  <Text style={styles.link}>Privacy Policy</Text>.
                 </Text>
-              </TouchableOpacity>
-
-              {/* Verify Button */}
-              <Animated.View
-                style={{
-                  transform: [{ scale: buttonScale }],
-                }}
-              >
-                <TouchableOpacity
-                  style={styles.verifyButton}
-                  onPress={handleVerify}
-                  activeOpacity={0.8}
-                >
-                  <Text style={styles.verifyButtonText}>Verify & Continue</Text>
-                  <Text style={styles.arrow}>→</Text>
-                </TouchableOpacity>
-              </Animated.View>
-
-              {/* Back to Login */}
-              <TouchableOpacity
-                onPress={() => navigation.goBack()}
-                style={styles.backButton}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.backText}>← Back to Login</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Terms and Privacy */}
-            <Text style={styles.termsText}>
-              By continuing, you agree to our{' '}
-              <Text style={styles.link}>Terms of Service</Text> and{' '}
-              <Text style={styles.link}>Privacy Policy</Text>.
-            </Text>
-          </Animated.View>
-        </View>
+              )}
+            </Animated.View>
+          </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -214,75 +248,97 @@ const OTPVerification = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0F172A',
+    backgroundColor: '#FFFFFF',
   },
+
   keyboardView: {
     flex: 1,
   },
+
+  scrollContent: {
+    flexGrow: 1,
+  },
+
   contentWrapper: {
     flex: 1,
-    paddingVertical: 20,
+    paddingHorizontal: 20,
   },
+
+  /* Hero */
   heroContainer: {
     paddingHorizontal: 20,
     paddingTop: 10,
   },
   heroCard: {
-    backgroundColor: '#1E293B',
     borderRadius: 16,
-    padding: 20,
-    alignItems: 'center',
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    backgroundColor: '#F8FAFC',
+    position: 'relative',
   },
   heroImage: {
     width: '100%',
-    height: 120,
-    marginBottom: 12,
+    height: '113%',
+    position: 'absolute',
   },
+  heroOverlay: {
+    position: 'absolute',
+    top: 16,
+    left: 16,
+    right: 16,
+  },
+
   heroText: {
     fontSize: 20,
     fontWeight: 'bold',
     color: '#FFFFFF',
+    textShadowColor: 'rgba(0,0,0,0.5)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
   },
+
+  /* Content */
   content: {
     flex: 1,
-    paddingHorizontal: 20,
-    justifyContent: 'space-between',
+    paddingTop: 20,
     paddingBottom: 20,
   },
   formSection: {
     flex: 1,
-    justifyContent: 'center',
   },
+
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#FFFFFF',
+    color: '#0F172A',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#94A3B8',
+    color: '#475569',
     lineHeight: 22,
     marginBottom: 40,
   },
+
+  /* OTP input */
   otpContainer: {
     marginBottom: 20,
   },
   label: {
     fontSize: 13,
-    color: '#CBD5E1',
+    color: '#475569',
     fontWeight: '600',
     marginBottom: 8,
   },
   otpInputContainer: {
-    backgroundColor: '#1E293B',
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: '#E2E8F0',
   },
   otpIcon: {
     fontSize: 18,
@@ -291,11 +347,12 @@ const styles = StyleSheet.create({
   otpInput: {
     flex: 1,
     fontSize: 24,
-    color: '#FFFFFF',
+    color: '#0F172A',
     paddingVertical: 16,
     letterSpacing: 12,
     textAlign: 'center',
   },
+
   inputError: {
     borderColor: '#EF4444',
   },
@@ -305,20 +362,24 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginLeft: 4,
   },
+
+  /* Resend */
   resendButton: {
     alignSelf: 'center',
     marginBottom: 30,
   },
   resendText: {
     fontSize: 14,
-    color: '#94A3B8',
+    color: '#64748B',
   },
   resendLink: {
-    color: '#3B82F6',
+    color: '#2563EB',
     fontWeight: '600',
   },
+
+  /* Verify */
   verifyButton: {
-    backgroundColor: '#3B82F6',
+    backgroundColor: '#2563EB',
     borderRadius: 12,
     paddingVertical: 16,
     flexDirection: 'row',
@@ -336,23 +397,29 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#FFFFFF',
   },
+
+  /* Back */
   backButton: {
     alignSelf: 'center',
     paddingVertical: 12,
   },
   backText: {
     fontSize: 14,
-    color: '#94A3B8',
+    color: '#64748B',
     fontWeight: '500',
   },
+
+  /* Footer */
   termsText: {
     fontSize: 11,
     color: '#64748B',
     textAlign: 'center',
     lineHeight: 16,
+    paddingTop: 20,
+    paddingBottom: 20,
   },
   link: {
-    color: '#3B82F6',
+    color: '#2563EB',
   },
 });
 

@@ -4,52 +4,58 @@ import { useNavigation } from '@react-navigation/native';
 import { Button } from '../components/Button';
 import { THEME } from '../theme';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import BottomTabBar from './BottomTabBar';
 
 const Payment = () => {
     const navigation = useNavigation();
     const [selectedMethod, setSelectedMethod] = useState<'cash' | 'upi'>('cash');
 
     return (
-        <SafeAreaView style={styles.container}>
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <Icon name="arrow-back" size={24} color={THEME.colors.black} />
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>Payment</Text>
-            </View>
+        <View style={styles.container}>
+            <SafeAreaView style={styles.safeArea}>
+                <View style={styles.header}>
+                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+                        <Icon name="arrow-back" size={24} color={THEME.colors.black} />
+                    </TouchableOpacity>
+                    <Text style={styles.headerTitle}>Payment</Text>
+                </View>
 
-            <View style={styles.content}>
-                <Text style={styles.amount}>₹350</Text>
-                <Text style={styles.amountLabel}>Total Amount</Text>
+                <View style={styles.content}>
+                    <Text style={styles.amount}>₹350</Text>
+                    <Text style={styles.amountLabel}>Total Amount</Text>
 
-                <Text style={styles.sectionTitle}>Select Payment Method</Text>
+                    <Text style={styles.sectionTitle}>Select Payment Method</Text>
 
-                <TouchableOpacity
-                    style={[styles.methodCard, selectedMethod === 'cash' && styles.selectedCard]}
-                    onPress={() => setSelectedMethod('cash')}
-                >
-                    <Icon name="money" size={24} color={THEME.colors.text} />
-                    <Text style={styles.methodName}>Cash</Text>
-                    {selectedMethod === 'cash' && <Icon name="check-circle" size={24} color={THEME.colors.primary} />}
-                </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[styles.methodCard, selectedMethod === 'cash' && styles.selectedCard]}
+                        onPress={() => setSelectedMethod('cash')}
+                    >
+                        <Icon name="money" size={24} color={THEME.colors.text} />
+                        <Text style={styles.methodName}>Cash</Text>
+                        {selectedMethod === 'cash' && <Icon name="check-circle" size={24} color={THEME.colors.primary} />}
+                    </TouchableOpacity>
 
-                <TouchableOpacity
-                    style={[styles.methodCard, selectedMethod === 'upi' && styles.selectedCard]}
-                    onPress={() => setSelectedMethod('upi')}
-                >
-                    <Icon name="account-balance-wallet" size={24} color={THEME.colors.text} />
-                    <Text style={styles.methodName}>UPI (GPay / PhonePe)</Text>
-                    {selectedMethod === 'upi' && <Icon name="check-circle" size={24} color={THEME.colors.primary} />}
-                </TouchableOpacity>
-            </View>
+                    <TouchableOpacity
+                        style={[styles.methodCard, selectedMethod === 'upi' && styles.selectedCard]}
+                        onPress={() => setSelectedMethod('upi')}
+                    >
+                        <Icon name="account-balance-wallet" size={24} color={THEME.colors.text} />
+                        <Text style={styles.methodName}>UPI (GPay / PhonePe)</Text>
+                        {selectedMethod === 'upi' && <Icon name="check-circle" size={24} color={THEME.colors.primary} />}
+                    </TouchableOpacity>
+                </View>
 
-            <View style={styles.footer}>
-                <Button
-                    title={`Pay via ${selectedMethod === 'cash' ? 'Cash' : 'UPI'}`}
-                    onPress={() => navigation.goBack()} // In real app, process payment then go back or success
-                />
-            </View>
-        </SafeAreaView>
+                <View style={styles.footer}>
+                    <Button
+                        title={`Pay via ${selectedMethod === 'cash' ? 'Cash' : 'UPI'}`}
+                        onPress={() => navigation.goBack()} // In real app, process payment then go back or success
+                    />
+                </View>
+            </SafeAreaView>
+
+            {/* Bottom Navigation Bar */}
+            <BottomTabBar />
+        </View>
     );
 };
 
@@ -57,6 +63,9 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: THEME.colors.background,
+    },
+    safeArea: {
+        flex: 1,
     },
     header: {
         flexDirection: 'row',
@@ -72,6 +81,7 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
     },
     content: {
+        flex: 1,
         padding: THEME.spacing.l,
     },
     amount: {
@@ -111,7 +121,7 @@ const styles = StyleSheet.create({
     },
     footer: {
         padding: THEME.spacing.m,
-        marginTop: 'auto',
+        paddingBottom: 10,
     },
 });
 

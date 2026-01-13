@@ -11,6 +11,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   Image,
+  Keyboard,
+  ScrollView,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
@@ -18,18 +20,47 @@ import { useTranslation } from 'react-i18next';
 const Login = () => {
   const navigation = useNavigation<any>();
   const { t } = useTranslation();
+
   const [countryCode, setCountryCode] = useState('+91');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [error, setError] = useState('');
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
 
-  // Animation values
+  // Animations
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
   const heroScale = useRef(new Animated.Value(0.9)).current;
+  const heroHeight = useRef(new Animated.Value(180)).current;
   const buttonScale = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // Hero image animation
+    const showSub = Keyboard.addListener('keyboardDidShow', () => {
+      setKeyboardOpen(true);
+      // Reduce hero height when keyboard opens
+      Animated.timing(heroHeight, {
+        toValue: 120,
+        duration: 300,
+        useNativeDriver: false,
+      }).start();
+    });
+
+    const hideSub = Keyboard.addListener('keyboardDidHide', () => {
+      setKeyboardOpen(false);
+      // Restore hero height when keyboard closes
+      Animated.timing(heroHeight, {
+        toValue: 180,
+        duration: 300,
+        useNativeDriver: false,
+      }).start();
+    });
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
+  useEffect(() => {
     Animated.spring(heroScale, {
       toValue: 1,
       friction: 6,
@@ -37,7 +68,6 @@ const Login = () => {
       useNativeDriver: true,
     }).start();
 
-    // Content fade in
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
@@ -52,7 +82,6 @@ const Login = () => {
       }),
     ]).start();
 
-    // Button entrance
     setTimeout(() => {
       Animated.spring(buttonScale, {
         toValue: 1,
@@ -82,129 +111,128 @@ const Login = () => {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
       >
-        <View style={styles.contentWrapper}>
-          {/* Hero Section */}
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* HERO SECTION */}
           <Animated.View
             style={[
               styles.heroContainer,
-              {
-                transform: [{ scale: heroScale }],
-              },
+              { transform: [{ scale: heroScale }] },
             ]}
           >
-            <View style={styles.heroCard}>
-              <Image 
-                source={require('../assets/spash4-Photoroom.png')} 
+            <Animated.View style={[styles.heroCard, { height: heroHeight }]}>
+              <Image
+                source={require('../assets/hero1.jpg')}
                 style={styles.heroImage}
-                resizeMode="contain"
+                resizeMode="cover"
               />
-              <Text style={styles.heroText}>Fast & Reliable</Text>
-            </View>
+            </Animated.View>
           </Animated.View>
 
-          {/* Content Section */}
-          <Animated.View
-            style={[
-              styles.content,
-              {
-                opacity: fadeAnim,
-                transform: [{ translateY: slideAnim }],
-              },
-            ]}
-          >
-            <View style={styles.formSection}>
-              <Text style={styles.title}>Let's get moving</Text>
-              <Text style={styles.subtitle}>
-                Enter your mobile number to login or signup for the best logistics
-                service.
-              </Text>
-
-              {/* Phone Input Section */}
-              <View style={styles.inputContainer}>
-                <Text style={styles.label}>Code</Text>
-                <Text style={[styles.label, styles.numberLabel]}>
-                  Mobile Number
+          <View style={styles.contentWrapper}>
+            <Animated.View
+              style={[
+                styles.content,
+                {
+                  opacity: fadeAnim,
+                  transform: [{ translateY: slideAnim }],
+                },
+              ]}
+            >
+              <View style={styles.formSection}>
+                <Text style={styles.title}>Let's get moving</Text>
+                <Text style={styles.subtitle}>
+                  Enter your mobile number to login or signup for the best
+                  logistics service.
                 </Text>
-              </View>
 
-              <View style={styles.inputRow}>
-                <View style={styles.codeInput}>
-                  <Text style={styles.codeText}>{countryCode}</Text>
+                <View style={styles.inputContainer}>
+                  <Text style={styles.label}>Code</Text>
+                  <Text style={[styles.label, styles.numberLabel]}>
+                    Mobile Number
+                  </Text>
                 </View>
-                <View
-                  style={[
-                    styles.phoneInputContainer,
-                    error ? styles.inputError : null,
-                  ]}
-                >
-                  <Text style={styles.phoneIcon}>📱</Text>
-                  <TextInput
-                    style={styles.phoneInput}
-                    placeholder="98765 43210"
-                    placeholderTextColor="#6B7280"
-                    keyboardType="phone-pad"
-                    value={phoneNumber}
-                    onChangeText={text => {
-                      setPhoneNumber(text);
-                      setError('');
-                    }}
-                    maxLength={10}
-                  />
+
+                <View style={styles.inputRow}>
+                  <View style={styles.codeInput}>
+                    <Text style={styles.codeText}>{countryCode}</Text>
+                  </View>
+
+                  <View
+                    style={[
+                      styles.phoneInputContainer,
+                      error && styles.inputError,
+                    ]}
+                  >
+                    <Text style={styles.phoneIcon}>📱</Text>
+                    <TextInput
+                      style={styles.phoneInput}
+                      placeholder="98765 43210"
+                      placeholderTextColor="#6B7280"
+                      keyboardType="phone-pad"
+                      maxLength={10}
+                      value={phoneNumber}
+                      onChangeText={text => {
+                        setPhoneNumber(text);
+                        setError('');
+                      }}
+                    />
+                  </View>
                 </View>
+
+                {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
+                <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
+                  <TouchableOpacity
+                    style={styles.otpButton}
+                    onPress={handleGetOTP}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.otpButtonText}>Get OTP</Text>
+                    <Text style={styles.arrow}>→</Text>
+                  </TouchableOpacity>
+                </Animated.View>
+
+                {!keyboardOpen && (
+                  <>
+                    <View style={styles.dividerContainer}>
+                      <View style={styles.divider} />
+                      <Text style={styles.dividerText}>Or continue with</Text>
+                      <View style={styles.divider} />
+                    </View>
+
+                    <View style={styles.socialContainer}>
+                      <TouchableOpacity
+                        style={styles.socialButton}
+                        onPress={() => handleSocialLogin('Google')}
+                      >
+                        <Text style={styles.socialButtonText}>Google</Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={styles.socialButton}
+                        onPress={() => handleSocialLogin('Apple')}
+                      >
+                        <Text style={styles.socialButtonText}>Apple</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </>
+                )}
               </View>
-              {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-              {/* Get OTP Button */}
-              <Animated.View
-                style={{
-                  transform: [{ scale: buttonScale }],
-                }}
-              >
-                <TouchableOpacity
-                  style={styles.otpButton}
-                  onPress={handleGetOTP}
-                  activeOpacity={0.8}
-                >
-                  <Text style={styles.otpButtonText}>Get OTP</Text>
-                  <Text style={styles.arrow}>→</Text>
-                </TouchableOpacity>
-              </Animated.View>
-
-              {/* Divider */}
-              <View style={styles.dividerContainer}>
-                <View style={styles.divider} />
-                <Text style={styles.dividerText}>Or continue with</Text>
-                <View style={styles.divider} />
-              </View>
-
-              {/* Social Login Buttons */}
-              <View style={styles.socialContainer}>
-                <TouchableOpacity
-                  style={styles.socialButton}
-                  onPress={() => handleSocialLogin('Google')}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.socialButtonText}>Google</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.socialButton}
-                  onPress={() => handleSocialLogin('Apple')}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.socialButtonText}>Apple</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            {/* Terms and Privacy - Now at bottom */}
-            <Text style={styles.termsText}>
-              By continuing, you agree to our{' '}
-              <Text style={styles.link}>Terms of Service</Text> and{' '}
-              <Text style={styles.link}>Privacy Policy</Text>.
-            </Text>
-          </Animated.View>
-        </View>
+              {!keyboardOpen && (
+                <Text style={styles.termsText}>
+                  By continuing, you agree to our{' '}
+                  <Text style={styles.link}>Terms of Service</Text> and{' '}
+                  <Text style={styles.link}>Privacy Policy</Text>.
+                </Text>
+              )}
+            </Animated.View>
+          </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -213,101 +241,122 @@ const Login = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0F172A',
+    backgroundColor: '#FFFFFF',
   },
+
   keyboardView: {
     flex: 1,
   },
+
+  scrollContent: {
+    flexGrow: 1,
+  },
+
   contentWrapper: {
     flex: 1,
-    paddingVertical: 20,
+    paddingHorizontal: 20,
   },
+
+  /* Hero */
   heroContainer: {
     paddingHorizontal: 20,
     paddingTop: 10,
   },
   heroCard: {
-    backgroundColor: '#1E293B',
     borderRadius: 16,
-    padding: 20,
-    alignItems: 'center',
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    backgroundColor: '#F8FAFC',
+    position: 'relative',
   },
   heroImage: {
     width: '100%',
-    height: 140,
-    marginBottom: 12,
+    height: '110%',
+    position: 'absolute',
+    // top:'0%',
   },
+  heroOverlay: {
+    position: 'absolute',
+    top: 16,
+    left: 16,
+    right: 16,
+  },
+
   heroText: {
     fontSize: 20,
     fontWeight: 'bold',
     color: '#FFFFFF',
+    textShadowColor: 'rgba(0,0,0,0.5)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
   },
+
+  /* Content */
   content: {
     flex: 1,
-    paddingHorizontal: 20,
-    justifyContent: 'space-between',
+    paddingTop: 20,
     paddingBottom: 20,
   },
   formSection: {
     flex: 1,
-    justifyContent: 'center',
   },
+
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#FFFFFF',
+    color: '#0F172A',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#94A3B8',
-    lineHeight: 20,
+    color: '#475569',
     marginBottom: 40,
   },
+
+  /* Inputs */
   inputContainer: {
     flexDirection: 'row',
     marginBottom: 8,
   },
   label: {
     fontSize: 13,
-    color: '#CBD5E1',
-    fontWeight: '600',
+    color: '#475569',
     flex: 2,
+    fontWeight: '600',
   },
   numberLabel: {
     flex: 2.5,
   },
+
   inputRow: {
     flexDirection: 'row',
     gap: 12,
-    marginBottom: 4,
   },
+
   codeInput: {
     flex: 1,
-    backgroundColor: '#1E293B',
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     paddingVertical: 16,
-    paddingHorizontal: 16,
-    justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: '#E2E8F0',
   },
   codeText: {
+    color: '#0F172A',
     fontSize: 16,
-    color: '#FFFFFF',
-    fontWeight: '600',
   },
+
   phoneInputContainer: {
     flex: 2.5,
-    backgroundColor: '#1E293B',
-    borderRadius: 12,
     flexDirection: 'row',
-    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
     paddingHorizontal: 14,
+    alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: '#E2E8F0',
   },
   phoneIcon: {
     fontSize: 18,
@@ -315,39 +364,41 @@ const styles = StyleSheet.create({
   },
   phoneInput: {
     flex: 1,
-    fontSize: 15,
-    color: '#FFFFFF',
+    color: '#0F172A',
     paddingVertical: 16,
   },
+
   inputError: {
     borderColor: '#EF4444',
   },
   errorText: {
     color: '#EF4444',
     fontSize: 12,
-    marginBottom: 12,
-    marginLeft: 4,
+    marginTop: 6,
   },
+
+  /* Primary button */
   otpButton: {
-    backgroundColor: '#3B82F6',
+    backgroundColor: '#2563EB',
     borderRadius: 12,
     paddingVertical: 16,
     flexDirection: 'row',
     justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 20,
     marginTop: 30,
+    marginBottom: 20,
   },
   otpButtonText: {
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFFFFF',
     marginRight: 8,
   },
   arrow: {
-    fontSize: 18,
     color: '#FFFFFF',
+    fontSize: 18,
   },
+
+  /* Divider */
   dividerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -356,13 +407,15 @@ const styles = StyleSheet.create({
   divider: {
     flex: 1,
     height: 1,
-    backgroundColor: '#334155',
+    backgroundColor: '#E2E8F0',
   },
   dividerText: {
-    fontSize: 13,
-    color: '#64748B',
     marginHorizontal: 12,
+    color: '#64748B',
+    fontSize: 13,
   },
+
+  /* Social login */
   socialContainer: {
     flexDirection: 'row',
     gap: 12,
@@ -370,26 +423,29 @@ const styles = StyleSheet.create({
   },
   socialButton: {
     flex: 1,
-    backgroundColor: '#1E293B',
-    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
     paddingVertical: 14,
+    borderRadius: 12,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: '#E2E8F0',
   },
   socialButtonText: {
+    color: '#0F172A',
     fontSize: 15,
     fontWeight: '600',
-    color: '#FFFFFF',
   },
+
+  /* Footer */
   termsText: {
     fontSize: 11,
     color: '#64748B',
     textAlign: 'center',
-    lineHeight: 16,
+    paddingTop: 20,
+    paddingBottom: 20,
   },
   link: {
-    color: '#3B82F6',
+    color: '#2563EB',
   },
 });
 
