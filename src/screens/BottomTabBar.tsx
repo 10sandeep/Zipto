@@ -98,6 +98,7 @@ const styles = StyleSheet.create({
   },
   navText: {
     fontSize: 10,
+     fontFamily: 'Poppins-Regular',
     color: '#64748B',
     marginTop: 2,
     fontWeight: '500',

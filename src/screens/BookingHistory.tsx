@@ -72,6 +72,7 @@ const styles = StyleSheet.create({
     headerTitle: {
         fontSize: 20,
         fontWeight: 'bold',
+         fontFamily: 'Poppins-Regular',
     },
     list: {
         padding: THEME.spacing.m,

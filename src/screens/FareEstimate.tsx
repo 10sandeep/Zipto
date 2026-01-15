@@ -243,6 +243,7 @@ const styles = StyleSheet.create({
     headerTitle: {
         fontSize: 18,
         fontWeight: '700',
+        fontFamily: 'Poppins-Regular',
         color: '#111827',
     },
     content: {
@@ -265,6 +266,7 @@ const styles = StyleSheet.create({
     cardTitle: {
         fontSize: 16,
         fontWeight: '700',
+        fontFamily: 'Poppins-Regular',
         color: '#111827',
         marginBottom: 8,
     },
@@ -302,12 +304,14 @@ const styles = StyleSheet.create({
     },
     locationLabel: {
         fontSize: 12,
+        fontFamily: 'Poppins-Regular',
         color: '#6B7280',
         marginBottom: 4,
         fontWeight: '500',
     },
     locationText: {
         fontSize: 15,
+        fontFamily: 'Poppins-Regular',
         color: '#111827',
         fontWeight: '600',
     },
@@ -319,20 +323,24 @@ const styles = StyleSheet.create({
     },
     fareLabel: {
         fontSize: 14,
+        fontFamily: 'Poppins-Regular',
         color: '#6B7280',
     },
     fareValue: {
         fontSize: 14,
+        fontFamily: 'Poppins-Regular',
         color: '#111827',
         fontWeight: '600',
     },
     totalLabel: {
         fontSize: 16,
+        fontFamily: 'Poppins-Regular',
         color: '#111827',
         fontWeight: '700',
     },
     totalAmount: {
         fontSize: 20,
+        fontFamily: 'Poppins-Regular',
         color: '#8B5CF6',
         fontWeight: '700',
     },
@@ -365,6 +373,7 @@ const styles = StyleSheet.create({
     paymentTitle: {
         fontSize: 15,
         fontWeight: '600',
+        fontFamily: 'Poppins-Regular',
         color: '#111827',
         marginBottom: 4,
     },
@@ -373,6 +382,7 @@ const styles = StyleSheet.create({
     },
     paymentSubtitle: {
         fontSize: 12,
+        fontFamily: 'Poppins-Regular',
         color: '#6B7280',
     },
     radioButton: {
@@ -419,6 +429,7 @@ const styles = StyleSheet.create({
         flex: 1,
         marginLeft: 12,
         fontSize: 13,
+        fontFamily: 'Poppins-Regular',
         color: '#1E40AF',
         fontWeight: '500',
     },
@@ -440,12 +451,14 @@ const styles = StyleSheet.create({
     },
     footerLabel: {
         fontSize: 12,
+        fontFamily: 'Poppins-Regular',
         color: '#6B7280',
         marginBottom: 4,
     },
     footerAmount: {
         fontSize: 24,
         fontWeight: '700',
+        fontFamily: 'Poppins-Regular',
         color: '#111827',
     },
     confirmButton: {

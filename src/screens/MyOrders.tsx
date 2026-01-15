@@ -410,6 +410,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
+    fontFamily: 'Poppins-Regular',
     color: '#1E293B',
     flex: 1,
     textAlign: 'center',
@@ -442,6 +443,7 @@ const styles = StyleSheet.create({
   tabText: {
     fontSize: 15,
     fontWeight: '600',
+    fontFamily: 'Poppins-Regular',
     color: '#64748B',
   },
   activeTabText: {
@@ -460,6 +462,7 @@ const styles = StyleSheet.create({
     color: '#3B82F6',
     fontSize: 12,
     fontWeight: 'bold',
+    fontFamily: 'Poppins-Regular',
   },
   scrollView: {
     flex: 1,
@@ -506,6 +509,7 @@ const styles = StyleSheet.create({
   orderType: {
     fontSize: 16,
     fontWeight: '600',
+    fontFamily: 'Poppins-Regular',
     color: '#1E293B',
     marginBottom: 2,
   },
@@ -552,6 +556,7 @@ const styles = StyleSheet.create({
   },
   locationLabel: {
     fontSize: 12,
+    fontFamily: 'Poppins-Regular',
     color: '#64748B',
     marginBottom: 2,
   },
@@ -575,6 +580,7 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 13,
+    fontFamily: 'Poppins-Regular',
     color: '#64748B',
   },
   orderFooterRight: {
@@ -593,12 +599,14 @@ const styles = StyleSheet.create({
   },
   timeEstimateText: {
     fontSize: 12,
+    fontFamily: 'Poppins-Regular',
     color: '#3B82F6',
     fontWeight: '600',
   },
   amountText: {
     fontSize: 18,
     fontWeight: 'bold',
+    fontFamily: 'Poppins-Regular',
     color: '#3B82F6',
   },
   trackButton: {
@@ -615,6 +623,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 15,
     fontWeight: '600',
+    fontFamily: 'Poppins-Regular',
   },
   emptyState: {
     alignItems: 'center',
@@ -624,12 +633,14 @@ const styles = StyleSheet.create({
   emptyStateTitle: {
     fontSize: 20,
     fontWeight: 'bold',
+    fontFamily: 'Poppins-Regular',
     color: '#1E293B',
     marginTop: 16,
     marginBottom: 8,
   },
   emptyStateText: {
     fontSize: 14,
+    fontFamily: 'Poppins-Regular',
     color: '#64748B',
     textAlign: 'center',
   },

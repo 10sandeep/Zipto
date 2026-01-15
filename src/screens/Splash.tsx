@@ -87,7 +87,7 @@ const Splash = () => {
           ]}
         >
           <Image
-            source={require('../assets/logo_zipto.png')}
+            source={require('../assets/images/logo_zipto.png')}
             style={styles.logoImage}
             resizeMode="contain"
           />

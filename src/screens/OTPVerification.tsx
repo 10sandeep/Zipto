@@ -140,7 +140,7 @@ const OTPVerification = () => {
           >
             <Animated.View style={[styles.heroCard, { height: heroHeight }]}>
               <Image
-                source={require('../assets/hero2.jpg')}
+                source={require('../assets/images/hero2.jpg')}
                 style={styles.heroImage}
                 resizeMode="cover"
               />
@@ -292,6 +292,7 @@ const styles = StyleSheet.create({
   heroText: {
     fontSize: 20,
     fontWeight: 'bold',
+    fontFamily: 'Poppins-Regular',
     color: '#FFFFFF',
     textShadowColor: 'rgba(0,0,0,0.5)',
     textShadowOffset: { width: 0, height: 2 },
@@ -311,11 +312,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
+    fontFamily: 'Poppins-Regular',
     color: '#0F172A',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
+    fontFamily: 'Poppins-Regular',
     color: '#475569',
     lineHeight: 22,
     marginBottom: 40,
@@ -327,6 +330,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 13,
+    fontFamily: 'Poppins-Regular',
     color: '#475569',
     fontWeight: '600',
     marginBottom: 8,
@@ -359,6 +363,7 @@ const styles = StyleSheet.create({
   errorText: {
     color: '#EF4444',
     fontSize: 12,
+    fontFamily: 'Poppins-Regular',
     marginTop: 8,
     marginLeft: 4,
   },
@@ -370,11 +375,13 @@ const styles = StyleSheet.create({
   },
   resendText: {
     fontSize: 14,
+    fontFamily: 'Poppins-Regular',
     color: '#64748B',
   },
   resendLink: {
     color: '#2563EB',
     fontWeight: '600',
+    fontFamily: 'Poppins-Regular',
   },
 
   /* Verify */
@@ -390,6 +397,7 @@ const styles = StyleSheet.create({
   verifyButtonText: {
     fontSize: 16,
     fontWeight: '600',
+    fontFamily: 'Poppins-Regular',
     color: '#FFFFFF',
     marginRight: 8,
   },
@@ -405,6 +413,7 @@ const styles = StyleSheet.create({
   },
   backText: {
     fontSize: 14,
+    fontFamily: 'Poppins-Regular',
     color: '#64748B',
     fontWeight: '500',
   },
@@ -412,6 +421,7 @@ const styles = StyleSheet.create({
   /* Footer */
   termsText: {
     fontSize: 11,
+    fontFamily: 'Poppins-Regular',
     color: '#64748B',
     textAlign: 'center',
     lineHeight: 16,

@@ -16,7 +16,8 @@ import LinearGradient from 'react-native-linear-gradient';
 import BottomTabBar from './BottomTabBar';
 
 const Coins = () => {
-  const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
+  const navigation =
+    useNavigation<NativeStackNavigationProp<AppStackParamList>>();
   const [availableCoins] = useState(850);
 
   const useCoinsOptions = [
@@ -119,7 +120,7 @@ const Coins = () => {
           </TouchableOpacity>
         </View>
 
-        <ScrollView 
+        <ScrollView
           style={styles.scrollView}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
@@ -135,11 +136,13 @@ const Coins = () => {
               <View style={styles.coinsIconContainer}>
                 <MaterialIcons name="stars" size={60} color="#FCD34D" />
               </View>
-              
+
               <View style={styles.balanceInfo}>
                 <Text style={styles.balanceLabel}>Available Coins</Text>
                 <Text style={styles.balanceAmount}>{availableCoins}</Text>
-                <Text style={styles.balanceSubtext}>≈ ₹{Math.floor(availableCoins / 10)}</Text>
+                <Text style={styles.balanceSubtext}>
+                  ≈ ₹{Math.floor(availableCoins / 10)}
+                </Text>
               </View>
 
               {/* Decorative circles */}
@@ -149,12 +152,14 @@ const Coins = () => {
             </LinearGradient>
 
             {/* Quick Transaction Button */}
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.transactionHistoryButton}
               onPress={() => console.log('View all transactions')}
             >
               <MaterialIcons name="receipt-long" size={20} color="#6366F1" />
-              <Text style={styles.transactionHistoryText}>Transaction History</Text>
+              <Text style={styles.transactionHistoryText}>
+                Transaction History
+              </Text>
               <MaterialIcons name="chevron-right" size={20} color="#94A3B8" />
             </TouchableOpacity>
           </View>
@@ -163,7 +168,7 @@ const Coins = () => {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Use Coins</Text>
             <View style={styles.optionsGrid}>
-              {useCoinsOptions.map((option) => (
+              {useCoinsOptions.map(option => (
                 <TouchableOpacity
                   key={option.id}
                   style={styles.optionCard}
@@ -171,23 +176,38 @@ const Coins = () => {
                   activeOpacity={0.8}
                 >
                   {option.badge && (
-                    <View style={[styles.badge, option.badge === 'NEW' && styles.badgeNew]}>
+                    <View
+                      style={[
+                        styles.badge,
+                        option.badge === 'NEW' && styles.badgeNew,
+                      ]}
+                    >
                       <Text style={styles.badgeText}>{option.badge}</Text>
                     </View>
                   )}
-                  
+
                   <LinearGradient
                     colors={option.gradient}
                     style={styles.optionIconContainer}
                   >
-                    <MaterialIcons name={option.icon} size={32} color="#FFFFFF" />
+                    <MaterialIcons
+                      name={option.icon}
+                      size={32}
+                      color="#FFFFFF"
+                    />
                   </LinearGradient>
-                  
+
                   <Text style={styles.optionTitle}>{option.title}</Text>
-                  <Text style={styles.optionDescription}>{option.description}</Text>
-                  
+                  <Text style={styles.optionDescription}>
+                    {option.description}
+                  </Text>
+
                   <View style={styles.optionArrow}>
-                    <MaterialIcons name="arrow-forward" size={20} color="#3B82F6" />
+                    <MaterialIcons
+                      name="arrow-forward"
+                      size={20}
+                      color="#3B82F6"
+                    />
                   </View>
                 </TouchableOpacity>
               ))}
@@ -202,14 +222,20 @@ const Coins = () => {
                 <React.Fragment key={index}>
                   <View style={styles.earnItem}>
                     <View style={styles.earnIconContainer}>
-                      <MaterialIcons name={way.icon} size={24} color="#6366F1" />
+                      <MaterialIcons
+                        name={way.icon}
+                        size={24}
+                        color="#6366F1"
+                      />
                     </View>
                     <Text style={styles.earnText}>{way.text}</Text>
                     <View style={styles.earnCoinsTag}>
                       <Text style={styles.earnCoinsText}>{way.coins}</Text>
                     </View>
                   </View>
-                  {index < earnCoinsWays.length - 1 && <View style={styles.earnDivider} />}
+                  {index < earnCoinsWays.length - 1 && (
+                    <View style={styles.earnDivider} />
+                  )}
                 </React.Fragment>
               ))}
             </View>
@@ -226,16 +252,33 @@ const Coins = () => {
                     onPress={option.onPress}
                     activeOpacity={0.7}
                   >
-                    <View style={[styles.learnIconContainer, { backgroundColor: `${option.color}15` }]}>
-                      <MaterialIcons name={option.icon} size={24} color={option.color} />
+                    <View
+                      style={[
+                        styles.learnIconContainer,
+                        { backgroundColor: `${option.color}15` },
+                      ]}
+                    >
+                      <MaterialIcons
+                        name={option.icon}
+                        size={24}
+                        color={option.color}
+                      />
                     </View>
                     <View style={styles.learnTextContainer}>
                       <Text style={styles.learnTitle}>{option.title}</Text>
-                      <Text style={styles.learnDescription}>{option.description}</Text>
+                      <Text style={styles.learnDescription}>
+                        {option.description}
+                      </Text>
                     </View>
-                    <MaterialIcons name="chevron-right" size={24} color="#94A3B8" />
+                    <MaterialIcons
+                      name="chevron-right"
+                      size={24}
+                      color="#94A3B8"
+                    />
                   </TouchableOpacity>
-                  {index < learnMoreOptions.length - 1 && <View style={styles.learnDivider} />}
+                  {index < learnMoreOptions.length - 1 && (
+                    <View style={styles.learnDivider} />
+                  )}
                 </React.Fragment>
               ))}
             </View>
@@ -286,6 +329,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
+    fontFamily: 'Poppins-Regular',
     color: '#0F172A',
   },
   historyButton: {
@@ -328,17 +372,20 @@ const styles = StyleSheet.create({
   },
   balanceLabel: {
     fontSize: 14,
+    fontFamily: 'Poppins-Regular',
     color: '#E0E7FF',
     marginBottom: 8,
   },
   balanceAmount: {
     fontSize: 48,
     fontWeight: 'bold',
+    fontFamily: 'Poppins-Regular',
     color: '#FFFFFF',
     marginBottom: 4,
   },
   balanceSubtext: {
     fontSize: 16,
+    fontFamily: 'Poppins-Regular',
     color: '#E0E7FF',
   },
   decorCircle: {
@@ -381,6 +428,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     fontWeight: '600',
+    fontFamily: 'Poppins-Regular',
     color: '#0F172A',
     marginLeft: 12,
   },
@@ -391,6 +439,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
+    fontFamily: 'Poppins-Regular',
     color: '#0F172A',
     marginBottom: 16,
   },
@@ -423,6 +472,7 @@ const styles = StyleSheet.create({
   badgeText: {
     fontSize: 10,
     fontWeight: 'bold',
+    fontFamily: 'Poppins-Regular',
     color: '#FFFFFF',
   },
   optionIconContainer: {
@@ -436,11 +486,13 @@ const styles = StyleSheet.create({
   optionTitle: {
     fontSize: 16,
     fontWeight: '600',
+    fontFamily: 'Poppins-Regular',
     color: '#0F172A',
     marginBottom: 6,
   },
   optionDescription: {
     fontSize: 13,
+    fontFamily: 'Poppins-Regular',
     color: '#64748B',
     marginBottom: 12,
   },
@@ -476,6 +528,7 @@ const styles = StyleSheet.create({
   earnText: {
     flex: 1,
     fontSize: 15,
+    fontFamily: 'Poppins-Regular',
     color: '#0F172A',
     fontWeight: '500',
   },
@@ -488,6 +541,7 @@ const styles = StyleSheet.create({
   earnCoinsText: {
     fontSize: 14,
     fontWeight: 'bold',
+    fontFamily: 'Poppins-Regular',
     color: '#16A34A',
   },
   earnDivider: {
@@ -523,11 +577,13 @@ const styles = StyleSheet.create({
   learnTitle: {
     fontSize: 15,
     fontWeight: '600',
+    fontFamily: 'Poppins-Regular',
     color: '#0F172A',
     marginBottom: 4,
   },
   learnDescription: {
     fontSize: 13,
+    fontFamily: 'Poppins-Regular',
     color: '#64748B',
   },
   learnDivider: {

@@ -125,7 +125,7 @@ const Login = () => {
           >
             <Animated.View style={[styles.heroCard, { height: heroHeight }]}>
               <Image
-                source={require('../assets/hero1.jpg')}
+                source={require('../assets/images/hero1.jpg')}
                 style={styles.heroImage}
                 resizeMode="cover"
               />
@@ -285,6 +285,7 @@ const styles = StyleSheet.create({
 
   heroText: {
     fontSize: 20,
+    fontFamily: 'Poppins-Regular',
     fontWeight: 'bold',
     color: '#FFFFFF',
     textShadowColor: 'rgba(0,0,0,0.5)',
@@ -305,11 +306,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
+    fontFamily: 'Poppins-Regular',
     color: '#0F172A',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
+    fontFamily: 'Poppins-Regular',
     color: '#475569',
     marginBottom: 40,
   },
@@ -321,6 +324,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 13,
+    fontFamily: 'Poppins-Regular',
     color: '#475569',
     flex: 2,
     fontWeight: '600',
@@ -374,6 +378,7 @@ const styles = StyleSheet.create({
   errorText: {
     color: '#EF4444',
     fontSize: 12,
+    fontFamily: 'Poppins-Regular',
     marginTop: 6,
   },
 
@@ -391,6 +396,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
+    fontFamily: 'Poppins-Regular',
     marginRight: 8,
   },
   arrow: {
@@ -434,11 +440,13 @@ const styles = StyleSheet.create({
     color: '#0F172A',
     fontSize: 15,
     fontWeight: '600',
+    fontFamily: 'Poppins-Regular',
   },
 
   /* Footer */
   termsText: {
     fontSize: 11,
+    fontFamily: 'Poppins-Regular',
     color: '#64748B',
     textAlign: 'center',
     paddingTop: 20,

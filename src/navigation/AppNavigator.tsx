@@ -7,10 +7,11 @@ import VehicleSelection from '../screens/VehicleSelection';
 import FareEstimate from '../screens/FareEstimate';
 import LiveTracking from '../screens/LiveTracking';
 import MyOrders from '../screens/MyOrders';
+import TrackOrder from '../screens/TrackOrder'; // Import TrackOrder screen
 import Payment from '../screens/Payment';
 import BookingHistory from '../screens/BookingHistory';
 import Profile from '../screens/Profile';
-import Coins from '../screens/Coins'; // Import the actual Coins screen
+import Coins from '../screens/Coins';
 
 // Placeholder for screens not yet implemented
 import { View, Text } from 'react-native';
@@ -30,7 +31,7 @@ export type AppStackParamList = {
   BookingHistory: undefined;
   Profile: undefined;
   MyOrders: undefined;
-  TrackOrder: { orderId?: string };
+  TrackOrder: { orderId: string }; // Changed to required orderId
   Wallet: undefined;
   Support: undefined;
   Settings: undefined;
@@ -66,10 +67,16 @@ const AppNavigator = () => {
       <Stack.Screen name="Profile" component={Profile} />
       
       <Stack.Screen name="MyOrders" component={MyOrders} />
-      <Stack.Screen
-        name="TrackOrder"
-        component={() => <PlaceholderScreen name="TrackOrder" />}
+      
+      {/* Use actual TrackOrder component */}
+      <Stack.Screen 
+        name="TrackOrder" 
+        component={TrackOrder}
+        options={{
+          animation: 'slide_from_bottom',
+        }}
       />
+      
       <Stack.Screen
         name="Wallet"
         component={() => <PlaceholderScreen name="Wallet" />}

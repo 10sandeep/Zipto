@@ -199,7 +199,7 @@ const LanguageSelection = () => {
       >
         <View style={styles.heroCard}>
           <Image
-            source={require('../assets/vehicle3.png')}
+            source={require('../assets/images/vehicle3.png')}
             style={styles.heroImage}
             resizeMode="cover"
           />
@@ -369,6 +369,7 @@ const styles = StyleSheet.create({
   heroText: {
     fontSize: 20,
     fontWeight: 'bold',
+    fontFamily: 'Poppins-Regular',
     color: '#FFFFFF',
     textShadowColor: 'rgba(0,0,0,0.5)',
     textShadowOffset: { width: 0, height: 2 },
@@ -415,18 +416,23 @@ const styles = StyleSheet.create({
   },
   icon: {
     fontSize: 50,
+    fontWeight: 'bold',
+    fontFamily: 'Poppins-Regular',
+    color: '#3B82F6',
   },
 
   /* Titles */
   title: {
     fontSize: 28,
     fontWeight: 'bold',
+    fontFamily: 'Poppins-Regular',
     color: '#0F172A',
     textAlign: 'center',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
+      fontFamily: 'Poppins-Regular',
     color: '#475569',
     textAlign: 'center',
     lineHeight: 22,
@@ -464,15 +470,18 @@ const styles = StyleSheet.create({
   languageName: {
     fontSize: 20,
     fontWeight: '600',
+       fontFamily: 'Poppins-Regular',
     color: '#0F172A',
     marginBottom: 2,
   },
   languageSubtext: {
     fontSize: 14,
+       fontFamily: 'Poppins-Regular',
     color: '#64748B',
   },
   checkIcon: {
     fontSize: 24,
+       fontFamily: 'Poppins-Regular',
     color: '#2563EB',
     fontWeight: 'bold',
   },
@@ -480,6 +489,7 @@ const styles = StyleSheet.create({
   /* Footer text */
   termsText: {
     fontSize: 11,
+       fontFamily: 'Poppins-Regular',
     color: '#64748B',
     textAlign: 'center',
     lineHeight: 16,

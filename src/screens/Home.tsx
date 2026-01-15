@@ -312,6 +312,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
+     fontFamily: 'Poppins-Regular',
     color: '#3B82F6',
     flex: 1,
   },
@@ -335,6 +336,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 10,
     fontWeight: 'bold',
+     fontFamily: 'Poppins-Regular',
   },
   bottomContainer: {
     marginBottom: 80,
@@ -355,6 +357,7 @@ const styles = StyleSheet.create({
   servicesTitle: {
     fontSize: 18,
     fontWeight: 'bold',
+    fontFamily: 'Poppins-Regular',
     color: '#0F172A',
     marginBottom: 12,
   },
@@ -384,12 +387,14 @@ const styles = StyleSheet.create({
   serviceTitle: {
     fontSize: 13,
     fontWeight: '600',
+    fontFamily: 'Poppins-Regular',
     color: '#0F172A',
     textAlign: 'center',
     marginBottom: 4,
   },
   serviceDescription: {
     fontSize: 11,
+     fontFamily: 'Poppins-Regular',
     color: '#64748B',
     textAlign: 'center',
   },

@@ -278,6 +278,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
+    fontFamily: 'Poppins-Regular',
     color: '#0F172A',
   },
   placeholder: {
@@ -334,16 +335,19 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 24,
     fontWeight: 'bold',
+    fontFamily: 'Poppins-Regular',
     color: '#0F172A',
     marginBottom: 6,
   },
   userEmail: {
     fontSize: 14,
+    fontFamily: 'Poppins-Regular',
     color: '#64748B',
     marginBottom: 4,
   },
   userPhone: {
     fontSize: 14,
+    fontFamily: 'Poppins-Regular',
     color: '#64748B',
   },
   statsRow: {
@@ -369,6 +373,7 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     fontSize: 12,
+    fontFamily: 'Poppins-Regular',
     color: '#64748B',
     marginTop: 4,
   },
@@ -379,6 +384,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 14,
     fontWeight: '600',
+    fontFamily: 'Poppins-Regular',
     color: '#64748B',
     marginBottom: 10,
     marginLeft: 4,
@@ -409,6 +415,7 @@ const styles = StyleSheet.create({
   },
   menuItemText: {
     flex: 1,
+    fontFamily: 'Poppins-Regular',
     fontSize: 15,
     color: '#0F172A',
     fontWeight: '500',
@@ -441,6 +448,7 @@ const styles = StyleSheet.create({
   logoutText: {
     fontSize: 16,
     fontWeight: '600',
+    fontFamily: 'Poppins-Regular',
     color: '#EF4444',
     marginLeft: 8,
   },
@@ -450,11 +458,13 @@ const styles = StyleSheet.create({
   },
   versionText: {
     fontSize: 13,
+    fontWeight: '500',
     color: '#94A3B8',
     marginBottom: 4,
   },
   copyrightText: {
     fontSize: 11,
+    fontWeight: '400',
     color: '#CBD5E1',
   },
 });
