@@ -125,7 +125,7 @@ const Login = () => {
           >
             <Animated.View style={[styles.heroCard, { height: heroHeight }]}>
               <Image
-                source={require('../assets/images/hero1.jpg')}
+                source={require('../assets/images/heroimg2.jpg')}
                 style={styles.heroImage}
                 resizeMode="cover"
               />
@@ -272,7 +272,7 @@ const styles = StyleSheet.create({
   },
   heroImage: {
     width: '100%',
-    height: '110%',
+    height: '120%',
     position: 'absolute',
     // top:'0%',
   },

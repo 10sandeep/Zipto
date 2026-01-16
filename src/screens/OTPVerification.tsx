@@ -140,7 +140,7 @@ const OTPVerification = () => {
           >
             <Animated.View style={[styles.heroCard, { height: heroHeight }]}>
               <Image
-                source={require('../assets/images/hero2.jpg')}
+                source={require('../assets/images/heroimg3.jpg')}
                 style={styles.heroImage}
                 resizeMode="cover"
               />
@@ -279,7 +279,7 @@ const styles = StyleSheet.create({
   },
   heroImage: {
     width: '100%',
-    height: '113%',
+    height: '114%',
     position: 'absolute',
   },
   heroOverlay: {

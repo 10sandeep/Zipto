@@ -30,8 +30,7 @@ const Coins = () => {
       gradient: ['#3B82F6', '#2563EB'],
       badge: null,
       onPress: () => {
-        // Navigate to transfer screen or show modal
-        console.log('Transfer to Wallet');
+        navigation.navigate('TransferToWallet');
       },
     },
     {
@@ -43,7 +42,7 @@ const Coins = () => {
       gradient: ['#10B981', '#059669'],
       badge: 'POPULAR',
       onPress: () => {
-        console.log('Get Discount');
+        navigation.navigate('GetDiscount');
       },
     },
     {
@@ -55,7 +54,7 @@ const Coins = () => {
       gradient: ['#F59E0B', '#D97706'],
       badge: 'NEW',
       onPress: () => {
-        console.log('Redeem Vouchers');
+        navigation.navigate('RedeemVouchers');
       },
     },
   ];
@@ -113,7 +112,7 @@ const Coins = () => {
           </TouchableOpacity>
           <Text style={styles.headerTitle}>My Coins</Text>
           <TouchableOpacity
-            onPress={() => console.log('Transaction History')}
+            onPress={() => navigation.navigate('TransactionHistory')}
             style={styles.historyButton}
           >
             <MaterialIcons name="history" size={24} color="#3B82F6" />
@@ -154,7 +153,7 @@ const Coins = () => {
             {/* Quick Transaction Button */}
             <TouchableOpacity
               style={styles.transactionHistoryButton}
-              onPress={() => console.log('View all transactions')}
+              onPress={() => navigation.navigate('TransactionHistory')}
             >
               <MaterialIcons name="receipt-long" size={20} color="#6366F1" />
               <Text style={styles.transactionHistoryText}>

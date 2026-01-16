@@ -7,11 +7,27 @@ import VehicleSelection from '../screens/VehicleSelection';
 import FareEstimate from '../screens/FareEstimate';
 import LiveTracking from '../screens/LiveTracking';
 import MyOrders from '../screens/MyOrders';
-import TrackOrder from '../screens/TrackOrder'; // Import TrackOrder screen
+import TrackOrder from '../screens/TrackOrder';
 import Payment from '../screens/Payment';
 import BookingHistory from '../screens/BookingHistory';
 import Profile from '../screens/Profile';
 import Coins from '../screens/Coins';
+import TransactionHistory from '../screens/TransactionHistory';
+import TransferToWallet from '../screens/TransferWallet';
+import GetDiscount from '../screens/GetDiscount';
+import RedeemVouchers from '../screens/RedeemVoucher';
+
+// Import all Profile-related screens
+import EditProfile from '../screens/EditProfile';
+import SavedAddresses from '../screens/SavedAddresses';
+import Wallet from '../screens/Wallet';
+import Support from '../screens/Support';
+import FAQs from '../screens/FAQS';
+import Settings from '../screens/Settings';
+import NotificationSettings from '../screens/NotificationSettings';
+import TermsAndConditions from '../screens/TermsAndConditions';
+import PrivacyPolicy from '../screens/PrivacyPolicy';
+import AboutUs from '../screens/AboutUs';
 
 // Placeholder for screens not yet implemented
 import { View, Text } from 'react-native';
@@ -31,7 +47,7 @@ export type AppStackParamList = {
   BookingHistory: undefined;
   Profile: undefined;
   MyOrders: undefined;
-  TrackOrder: { orderId: string }; // Changed to required orderId
+  TrackOrder: { orderId: string };
   Wallet: undefined;
   Support: undefined;
   Settings: undefined;
@@ -45,6 +61,10 @@ export type AppStackParamList = {
   FAQs: undefined;
   NotificationSettings: undefined;
   Coins: undefined;
+  TransactionHistory: undefined;
+  TransferToWallet: undefined;
+  GetDiscount: undefined;
+  RedeemVouchers: undefined;
 };
 
 const Stack = createNativeStackNavigator<AppStackParamList>();
@@ -63,12 +83,12 @@ const AppNavigator = () => {
       <Stack.Screen name="Payment" component={Payment} />
       <Stack.Screen name="BookingHistory" component={BookingHistory} />
       
-      {/* Use actual Profile component */}
+      {/* Profile Screen */}
       <Stack.Screen name="Profile" component={Profile} />
       
       <Stack.Screen name="MyOrders" component={MyOrders} />
       
-      {/* Use actual TrackOrder component */}
+      {/* Track Order Screen */}
       <Stack.Screen 
         name="TrackOrder" 
         component={TrackOrder}
@@ -77,30 +97,79 @@ const AppNavigator = () => {
         }}
       />
       
+      {/* Profile Menu Screens - Now using actual components */}
+      <Stack.Screen
+        name="EditProfile"
+        component={EditProfile}
+        options={{
+          animation: 'slide_from_right',
+        }}
+      />
+      <Stack.Screen
+        name="SavedAddresses"
+        component={SavedAddresses}
+        options={{
+          animation: 'slide_from_right',
+        }}
+      />
       <Stack.Screen
         name="Wallet"
-        component={() => <PlaceholderScreen name="Wallet" />}
+        component={Wallet}
+        options={{
+          animation: 'slide_from_right',
+        }}
       />
       <Stack.Screen
         name="Support"
-        component={() => <PlaceholderScreen name="Support" />}
+        component={Support}
+        options={{
+          animation: 'slide_from_right',
+        }}
+      />
+      <Stack.Screen
+        name="FAQs"
+        component={FAQs}
+        options={{
+          animation: 'slide_from_right',
+        }}
       />
       <Stack.Screen
         name="Settings"
-        component={() => <PlaceholderScreen name="Settings" />}
+        component={Settings}
+        options={{
+          animation: 'slide_from_right',
+        }}
+      />
+      <Stack.Screen
+        name="NotificationSettings"
+        component={NotificationSettings}
+        options={{
+          animation: 'slide_from_right',
+        }}
       />
       <Stack.Screen
         name="TermsAndConditions"
-        component={() => <PlaceholderScreen name="TermsAndConditions" />}
+        component={TermsAndConditions}
+        options={{
+          animation: 'slide_from_right',
+        }}
       />
       <Stack.Screen
         name="PrivacyPolicy"
-        component={() => <PlaceholderScreen name="PrivacyPolicy" />}
+        component={PrivacyPolicy}
+        options={{
+          animation: 'slide_from_right',
+        }}
       />
       <Stack.Screen
         name="AboutUs"
-        component={() => <PlaceholderScreen name="AboutUs" />}
+        component={AboutUs}
+        options={{
+          animation: 'slide_from_right',
+        }}
       />
+      
+      {/* Placeholder screens */}
       <Stack.Screen
         name="Notifications"
         component={() => <PlaceholderScreen name="Notifications" />}
@@ -110,26 +179,38 @@ const AppNavigator = () => {
         component={() => <PlaceholderScreen name="ScheduleDelivery" />}
       />
       
-      {/* Additional screens for Profile menu items */}
-      <Stack.Screen
-        name="EditProfile"
-        component={() => <PlaceholderScreen name="EditProfile" />}
-      />
-      <Stack.Screen
-        name="SavedAddresses"
-        component={() => <PlaceholderScreen name="SavedAddresses" />}
-      />
-      <Stack.Screen
-        name="FAQs"
-        component={() => <PlaceholderScreen name="FAQs" />}
-      />
-      <Stack.Screen
-        name="NotificationSettings"
-        component={() => <PlaceholderScreen name="NotificationSettings" />}
-      />
-      
-      {/* Use actual Coins component */}
+      {/* Coins Screen */}
       <Stack.Screen name="Coins" component={Coins} />
+      
+      {/* Coins related screens */}
+      <Stack.Screen 
+        name="TransactionHistory" 
+        component={TransactionHistory}
+        options={{
+          animation: 'slide_from_right',
+        }}
+      />
+      <Stack.Screen 
+        name="TransferToWallet" 
+        component={TransferToWallet}
+        options={{
+          animation: 'slide_from_right',
+        }}
+      />
+      <Stack.Screen 
+        name="GetDiscount" 
+        component={GetDiscount}
+        options={{
+          animation: 'slide_from_right',
+        }}
+      />
+      <Stack.Screen 
+        name="RedeemVouchers" 
+        component={RedeemVouchers}
+        options={{
+          animation: 'slide_from_right',
+        }}
+      />
     </Stack.Navigator>
   );
 };

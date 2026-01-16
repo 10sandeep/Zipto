@@ -199,13 +199,10 @@ const LanguageSelection = () => {
       >
         <View style={styles.heroCard}>
           <Image
-            source={require('../assets/images/vehicle3.png')}
+            source={require('../assets/images/heroimg1.jpg')}
             style={styles.heroImage}
             resizeMode="cover"
           />
-          <View style={styles.heroOverlay}>
-            <Text style={styles.heroText}>Fast & Reliable</Text>
-          </View>
         </View>
       </Animated.View>
 
@@ -221,7 +218,7 @@ const LanguageSelection = () => {
           ]}
         >
           <View style={styles.formSection}>
-            {/* Globe Icon with glow */}
+            {/* Zipto Logo with glow */}
             <View style={styles.iconWrapper}>
               <Animated.View
                 style={[
@@ -239,7 +236,11 @@ const LanguageSelection = () => {
                   },
                 ]}
               >
-                <Text style={styles.icon}>🌍</Text>
+                <Image
+                  source={require('../assets/images/logo_zipto.png')}
+                  style={styles.logoImage}
+                  resizeMode="contain"
+                />
               </Animated.View>
             </View>
 
@@ -320,7 +321,7 @@ const styles = StyleSheet.create({
     height: 250,
     borderRadius: 125,
     backgroundColor: 'rgba(59, 130, 246, 0.08)',
-    top: -120,
+    top: -150,
     right: -80,
   },
   decorCircle2: {
@@ -329,7 +330,7 @@ const styles = StyleSheet.create({
     height: 200,
     borderRadius: 100,
     backgroundColor: 'rgba(99, 102, 241, 0.1)',
-    bottom: 100,
+    bottom: 120,
     left: -100,
   },
   decorCircle3: {
@@ -338,7 +339,7 @@ const styles = StyleSheet.create({
     height: 180,
     borderRadius: 90,
     backgroundColor: 'rgba(59, 130, 246, 0.06)',
-    top: '45%',
+    top: '50%',
     right: -60,
   },
 
@@ -348,7 +349,7 @@ const styles = StyleSheet.create({
     paddingTop: 10,
   },
   heroCard: {
-    height: 180,
+    height: 200,
     borderRadius: 16,
     overflow: 'hidden',
     borderWidth: 1,
@@ -357,7 +358,7 @@ const styles = StyleSheet.create({
   },
   heroImage: {
     width: '100%',
-    height: '100%',
+    height: '110%',
     position: 'absolute',
   },
   heroOverlay: {
@@ -391,7 +392,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  /* Globe icon */
+  /* Logo icon */
   iconWrapper: {
     alignItems: 'center',
     marginBottom: 24,
@@ -401,6 +402,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: 120,
     height: 120,
+    top: -10,
     borderRadius: 60,
     backgroundColor: 'rgba(59, 130, 246, 0.25)',
   },
@@ -414,11 +416,9 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#CBD5F5',
   },
-  icon: {
-    fontSize: 50,
-    fontWeight: 'bold',
-    fontFamily: 'Poppins-Regular',
-    color: '#3B82F6',
+  logoImage: {
+    width: 80,
+    height: 80,
   },
 
   /* Titles */
@@ -432,7 +432,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 16,
-      fontFamily: 'Poppins-Regular',
+    fontFamily: 'Poppins-Regular',
     color: '#475569',
     textAlign: 'center',
     lineHeight: 22,
@@ -470,18 +470,18 @@ const styles = StyleSheet.create({
   languageName: {
     fontSize: 20,
     fontWeight: '600',
-       fontFamily: 'Poppins-Regular',
+    fontFamily: 'Poppins-Regular',
     color: '#0F172A',
     marginBottom: 2,
   },
   languageSubtext: {
     fontSize: 14,
-       fontFamily: 'Poppins-Regular',
+    fontFamily: 'Poppins-Regular',
     color: '#64748B',
   },
   checkIcon: {
     fontSize: 24,
-       fontFamily: 'Poppins-Regular',
+    fontFamily: 'Poppins-Regular',
     color: '#2563EB',
     fontWeight: 'bold',
   },
@@ -489,7 +489,7 @@ const styles = StyleSheet.create({
   /* Footer text */
   termsText: {
     fontSize: 11,
-       fontFamily: 'Poppins-Regular',
+    fontFamily: 'Poppins-Regular',
     color: '#64748B',
     textAlign: 'center',
     lineHeight: 16,
