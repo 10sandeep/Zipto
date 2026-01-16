@@ -5,6 +5,7 @@ import {
   Dimensions,
   Text,
   TouchableOpacity,
+  Image,
 } from 'react-native';
 import MapView, { PROVIDER_GOOGLE, Marker, UrlTile } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -102,17 +103,26 @@ const Home = () => {
       <SafeAreaView style={styles.mainOverlay} edges={['top']}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Zipto</Text>
+          {/* Left Side - Logo and Zipto Text */}
+          <View style={styles.logoSection}>
+            <View style={styles.logoContainer}>
+              <Image
+                source={require('../assets/images/logo_zipto.png')}
+                style={styles.logoImage}
+                resizeMode="contain"
+              />
+            </View>
+            <Text style={styles.ziptoText}>Zipto</Text>
+          </View>
 
+          {/* Right Side - Wallet Button */}
           <TouchableOpacity
-            onPress={() => navigation.navigate('Notifications')}
-            style={styles.notificationButton}
+            onPress={() => navigation.navigate('Wallet')}
+            style={styles.walletButton}
             activeOpacity={0.7}
           >
-            <MaterialIcons name="notifications" size={28} color="#0F172A" />
-            <View style={styles.notificationBadge}>
-              <Text style={styles.notificationBadgeText}>3</Text>
-            </View>
+            <MaterialIcons name="account-balance-wallet" size={24} color="#3B82F6" />
+            <Text style={styles.walletText}>Wallet</Text>
           </TouchableOpacity>
         </View>
 
@@ -309,34 +319,44 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-     fontFamily: 'Poppins-Regular',
-    color: '#3B82F6',
+  logoSection: {
+    alignItems: 'center',
     flex: 1,
   },
-  notificationButton: {
-    padding: 8,
-    position: 'relative',
-  },
-  notificationBadge: {
-    position: 'absolute',
-    top: 6,
-    right: 6,
-    backgroundColor: '#EF4444',
-    borderRadius: 10,
-    minWidth: 18,
-    height: 18,
+  logoContainer: {
+    width: 40,
+    height: 40,
+    marginRight:200,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 4,
   },
-  notificationBadgeText: {
-    color: '#FFFFFF',
-    fontSize: 10,
+  logoImage: {
+    width: '100%',
+    height: '100%',
+  },
+  ziptoText: {
+    fontSize: 14,
+     marginRight:200,
     fontWeight: 'bold',
-     fontFamily: 'Poppins-Regular',
+    fontFamily: 'Poppins-Regular',
+    color: '#3B82F6',
+  },
+  walletButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#EFF6FF',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+  },
+  walletText: {
+    fontSize: 14,
+    fontWeight: '600',
+    fontFamily: 'Poppins-Regular',
+    color: '#3B82F6',
   },
   bottomContainer: {
     marginBottom: 80,
@@ -394,7 +414,7 @@ const styles = StyleSheet.create({
   },
   serviceDescription: {
     fontSize: 11,
-     fontFamily: 'Poppins-Regular',
+    fontFamily: 'Poppins-Regular',
     color: '#64748B',
     textAlign: 'center',
   },
