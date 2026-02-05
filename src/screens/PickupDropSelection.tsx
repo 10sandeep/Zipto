@@ -7,40 +7,31 @@ import {
   Text,
   TextInput,
   SafeAreaView,
-  Animated,
-  Easing,
   ActivityIndicator,
   Alert,
   ScrollView,
+  Animated,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Geolocation from '@react-native-community/geolocation';
+import { mapboxApi } from '../api/mapbox';
 
 // Type definitions
 type Location = {
   id: string;
   name: string;
   address: string;
+  center?: [number, number];
+  metadata?: {
+    mapbox_id?: string;
+    feature_type?: string;
+  };
 };
 
-type CityName =
-  | 'Bhubaneswar'
-  | 'Cuttack'
-  | 'Puri'
-  | 'Berhampur'
-  | 'Sambalpur'
-  | 'Rourkela'
-  | 'Balasore'
-  | 'Baripada'
-  | 'Bhadrak'
-  | 'Jharsuguda';
+type CityName = string;
 
 type LocationType = 'Home' | 'Shop' | 'Office' | 'Other';
-
-type MockLocationsType = {
-  [key in CityName]: Location[];
-};
 
 const CITIES: CityName[] = [
   'Bhubaneswar',
@@ -57,81 +48,6 @@ const CITIES: CityName[] = [
 
 const LOCATION_TYPES: LocationType[] = ['Home', 'Shop', 'Office', 'Other'];
 
-const MOCK_LOCATIONS: MockLocationsType = {
-  Bhubaneswar: [
-    {
-      id: '1',
-      name: 'Master Canteen Area',
-      address: 'Kharvela Nagar, Bhubaneswar',
-    },
-    { id: '2', name: 'KIIT University', address: 'Patia, Bhubaneswar' },
-    { id: '3', name: 'Jayadev Vihar', address: 'Nayapalli, Bhubaneswar' },
-    { id: '4', name: 'Esplanade One Mall', address: 'Rasulgarh, Bhubaneswar' },
-    { id: '5', name: 'Lingaraj Temple', address: 'Old Town, Bhubaneswar' },
-    { id: '6', name: 'Khandagiri', address: 'Khandagiri, Bhubaneswar' },
-    { id: '7', name: 'Patia', address: 'Patia, Bhubaneswar' },
-    {
-      id: '8',
-      name: 'Chandrasekharpur',
-      address: 'Chandrasekharpur, Bhubaneswar',
-    },
-  ],
-  Cuttack: [
-    { id: '1', name: 'Buxi Bazaar', address: 'Buxi Bazaar, Cuttack' },
-    { id: '2', name: 'CDA Market', address: 'Sector 9, Cuttack' },
-    { id: '3', name: 'Madhupatna', address: 'Madhupatna, Cuttack' },
-  ],
-  Puri: [
-    { id: '1', name: 'Jagannath Temple', address: 'Grand Road, Puri' },
-    { id: '2', name: 'Puri Beach', address: 'Sea Beach, Puri' },
-    { id: '3', name: 'Gundicha Temple', address: 'Gundicha, Puri' },
-  ],
-  Berhampur: [
-    {
-      id: '1',
-      name: 'Berhampur University',
-      address: 'Bhanja Bihar, Berhampur',
-    },
-    { id: '2', name: 'Silk City', address: 'Gandhi Nagar, Berhampur' },
-  ],
-  Sambalpur: [
-    { id: '1', name: 'Hirakud Dam', address: 'Hirakud, Sambalpur' },
-    { id: '2', name: 'VSS University', address: 'Burla, Sambalpur' },
-  ],
-  Rourkela: [
-    { id: '1', name: 'Steel Plant', address: 'Rourkela Steel Plant, Rourkela' },
-    { id: '2', name: 'NIT Rourkela', address: 'NIT Campus, Rourkela' },
-  ],
-  Balasore: [
-    { id: '1', name: 'Chandipur Beach', address: 'Chandipur, Balasore' },
-    {
-      id: '2',
-      name: 'Balasore Station',
-      address: 'Railway Station Road, Balasore',
-    },
-  ],
-  Baripada: [
-    { id: '1', name: 'Baripada Bus Stand', address: 'Main Road, Baripada' },
-    { id: '2', name: 'Simlipal', address: 'Simlipal National Park, Baripada' },
-  ],
-  Bhadrak: [
-    {
-      id: '1',
-      name: 'Bhadrak Railway Station',
-      address: 'Station Road, Bhadrak',
-    },
-    { id: '2', name: 'Bhadrak Market', address: 'Market Complex, Bhadrak' },
-  ],
-  Jharsuguda: [
-    {
-      id: '1',
-      name: 'Jharsuguda Airport',
-      address: 'Veer Surendra Sai Airport, Jharsuguda',
-    },
-    { id: '2', name: 'VIMSAR', address: 'Hospital Road, Jharsuguda' },
-  ],
-};
-
 const PickupDropSelection = () => {
   const navigation = useNavigation<any>();
   const [pickup, setPickup] = useState('');
@@ -146,6 +62,7 @@ const PickupDropSelection = () => {
     latitude: number;
     longitude: number;
   } | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
 
   // New states for sender details
   const [senderName, setSenderName] = useState('');
@@ -155,102 +72,100 @@ const PickupDropSelection = () => {
   >('');
   const [customLocationName, setCustomLocationName] = useState('');
 
-  // Animation values
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(30)).current;
+  // Coordinates for pickup and drop locations
+  const [pickupCoords, setPickupCoords] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
+  const [dropCoords, setDropCoords] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
+
+  // Session token for Mapbox analytics
+  const sessionTokenRef = useRef(
+    `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+  );
+
+  // Search debounce timer
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Animated values
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+  const slideAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 600,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 600,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, []);
-
-  useEffect(() => {
-    if (selectedCity && MOCK_LOCATIONS[selectedCity]) {
-      setFilteredLocations(MOCK_LOCATIONS[selectedCity]);
-      setShowCitySelection(false);
-    }
+    // Determine proximity based on selected city if needed,
+    // or just clear locations when city changes
+    setFilteredLocations([]);
   }, [selectedCity]);
 
-  const reverseGeocode = async (latitude, longitude) => {
-    try {
-      const mockAddresses = [
-        'Master Canteen Area, Kharvela Nagar, Bhubaneswar',
-        'KIIT University, Patia, Bhubaneswar',
-        'Esplanade One Mall, Rasulgarh, Bhubaneswar',
-        'Chandrasekharpur, Bhubaneswar',
-      ];
-
-      await new Promise(resolve => setTimeout(resolve, 500));
-      return mockAddresses[Math.floor(Math.random() * mockAddresses.length)];
-    } catch (error) {
-      throw new Error('Unable to get address');
-    }
-  };
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const getCurrentLocation = () => {
     setIsLoadingLocation(true);
 
-    Geolocation.getCurrentPosition(
-      async position => {
-        const { latitude, longitude } = position.coords;
-        setCurrentLocationCoords({ latitude, longitude });
+    const fetchLocation = (highAccuracy = true) => {
+      Geolocation.getCurrentPosition(
+        async position => {
+          const { latitude, longitude } = position.coords;
+          setCurrentLocationCoords({ latitude, longitude });
 
-        try {
-          const address = await reverseGeocode(latitude, longitude);
+          try {
+            const address = await mapboxApi.reverseGeocode(latitude, longitude);
 
-          if (activeInput === 'pickup') {
-            setPickup(address);
-          } else {
-            setDrop(address);
+            if (address) {
+              if (activeInput === 'pickup') {
+                setPickup(address);
+              } else {
+                setDrop(address);
+              }
+
+              const detectedCity = CITIES.find(city =>
+                address.toLowerCase().includes(city.toLowerCase()),
+              );
+
+              if (detectedCity && !selectedCity) {
+                setSelectedCity(detectedCity);
+              }
+            }
+          } catch (error) {
+            console.error('Reverse geocoding error:', error);
+            Alert.alert('Error', 'Could not get your current location address');
+          } finally {
+            setIsLoadingLocation(false);
+          }
+        },
+        err => {
+          if (highAccuracy) {
+            console.log('High accuracy failed, trying low accuracy...');
+            fetchLocation(false); // Retry with low accuracy
+            return;
           }
 
-          const detectedCity = CITIES.find(city =>
-            address.toLowerCase().includes(city.toLowerCase()),
+          console.error('Geolocation error:', err);
+          Alert.alert(
+            'Location Error',
+            'Could not fetch location. Ensure GPS is on.',
           );
-
-          if (detectedCity && !selectedCity) {
-            setSelectedCity(detectedCity);
-          }
-
           setIsLoadingLocation(false);
-        } catch (error) {
-          Alert.alert('Error', 'Could not get your current location address');
-          setIsLoadingLocation(false);
-        }
-      },
-      error => {
-        console.error(error);
-        let errorMessage = 'Could not get your location';
+        },
+        {
+          enableHighAccuracy: highAccuracy,
+          timeout: highAccuracy ? 15000 : 30000,
+          maximumAge: 10000,
+        },
+      );
+    };
 
-        if (error.code === 1) {
-          errorMessage =
-            'Location permission denied. Please enable location access.';
-        } else if (error.code === 2) {
-          errorMessage = 'Location not available. Please try again.';
-        } else if (error.code === 3) {
-          errorMessage = 'Location request timed out. Please try again.';
-        }
-
-        Alert.alert('Location Error', errorMessage);
-        setIsLoadingLocation(false);
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 15000,
-        maximumAge: 10000,
-      },
-    );
+    fetchLocation(true);
   };
 
   const handleCitySelect = (city: CityName) => {
@@ -258,13 +173,52 @@ const PickupDropSelection = () => {
     setShowCitySelection(false);
   };
 
-  const handleLocationSelect = (location: Location) => {
-    const fullAddress = location.name + ', ' + location.address;
+  const handleLocationSelect = async (location: Location) => {
+    try {
+      // Check if we have a mapbox_id to retrieve details
+      if (!location.metadata?.mapbox_id) {
+        Alert.alert(
+          'Error',
+          'Invalid location data. Please try selecting again.',
+        );
+        return;
+      }
 
-    if (activeInput === 'pickup') {
-      setPickup(fullAddress);
-    } else {
-      setDrop(fullAddress);
+      // Call retrieve API to get full location details including coordinates
+      const fullLocationData = await mapboxApi.retrievePlace(
+        location.metadata.mapbox_id,
+        sessionTokenRef.current,
+      );
+
+      if (!fullLocationData || !fullLocationData.center) {
+        Alert.alert(
+          'Error',
+          'Could not get location coordinates. Please try again.',
+        );
+        return;
+      }
+
+      const fullAddress =
+        fullLocationData.name + ', ' + fullLocationData.address;
+      const coordinates = {
+        latitude: fullLocationData.center[1], // Mapbox format is [lng, lat]
+        longitude: fullLocationData.center[0],
+      };
+
+      if (activeInput === 'pickup') {
+        setPickup(fullAddress);
+        setPickupCoords(coordinates);
+      } else {
+        setDrop(fullAddress);
+        setDropCoords(coordinates);
+      }
+
+      // Clear suggestions and reset active input to close suggestion cards
+      setFilteredLocations([]);
+      setActiveInput('' as 'pickup' | 'drop');
+    } catch (error) {
+      console.error('Error retrieving location:', error);
+      Alert.alert('Error', 'Failed to select location. Please try again.');
     }
   };
 
@@ -279,23 +233,58 @@ const PickupDropSelection = () => {
     }
   };
 
-  const handleSearchLocation = (text: string) => {
+  const handleSearchLocation = async (text: string) => {
+    // Update input state immediately
     if (activeInput === 'pickup') {
       setPickup(text);
     } else {
       setDrop(text);
     }
 
-    if (selectedCity && text.trim() !== '') {
-      const filtered = MOCK_LOCATIONS[selectedCity]?.filter(
-        location =>
-          location.name.toLowerCase().includes(text.toLowerCase()) ||
-          location.address.toLowerCase().includes(text.toLowerCase()),
-      );
-      setFilteredLocations(filtered || []);
-    } else if (selectedCity) {
-      setFilteredLocations(MOCK_LOCATIONS[selectedCity] || []);
+    // Clear any existing timeout
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
     }
+
+    // If text is too short, clear suggestions
+    if (text.trim().length < 2) {
+      setFilteredLocations([]);
+      setIsSearching(false);
+      return;
+    }
+
+    // Set loading state immediately
+    setIsSearching(true);
+
+    // Debounce search - wait 400ms after user stops typing
+    searchTimeoutRef.current = setTimeout(async () => {
+      try {
+        // Add city context to query if selected
+        const query = selectedCity ? `${text}, ${selectedCity}` : text;
+
+        // Use current location for proximity-based search if available
+        const proximity = currentLocationCoords
+          ? {
+              lat: currentLocationCoords.latitude,
+              lng: currentLocationCoords.longitude,
+            }
+          : undefined;
+
+        // Search with session token for analytics
+        const results = await mapboxApi.searchPlaces(
+          query,
+          proximity,
+          sessionTokenRef.current,
+        );
+
+        setFilteredLocations(results);
+      } catch (error) {
+        console.error('Search error:', error);
+        setFilteredLocations([]);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 400); // 400ms debounce delay
   };
 
   const validateMobileNumber = (number: string) => {
@@ -327,10 +316,29 @@ const PickupDropSelection = () => {
       return;
     }
 
+    // Validate coordinates are available
+    if (!pickupCoords) {
+      Alert.alert(
+        'Invalid Pickup Location',
+        'Please select pickup location from the suggestions',
+      );
+      return;
+    }
+
+    if (!dropCoords) {
+      Alert.alert(
+        'Invalid Drop Location',
+        'Please select drop location from the suggestions',
+      );
+      return;
+    }
+
     if (pickup && drop) {
       navigation.navigate('VehicleSelection', {
         pickup,
         drop,
+        pickupCoords,
+        dropCoords,
         currentLocationCoords,
         senderName,
         senderMobile,
@@ -431,7 +439,10 @@ const PickupDropSelection = () => {
 
         {/* Location Inputs */}
         {selectedCity && (
-          <ScrollView showsVerticalScrollIndicator={false}>
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
             <View style={styles.inputContainer}>
               <Text style={styles.inputLabel}>
                 Selected City:{' '}
@@ -451,7 +462,232 @@ const PickupDropSelection = () => {
               </TouchableOpacity>
             </View>
 
-            {/* Sender Details Section */}
+            {/* Pickup & Drop Section - RESTRUCTURED */}
+            <View style={styles.locationsSection}>
+              <Text style={styles.sectionTitle}>Pickup & Drop Locations</Text>
+
+              {/* Pickup Input */}
+              <View style={styles.locationInputContainer}>
+                <View style={styles.inputIcon}>
+                  <View style={styles.pickupDot} />
+                </View>
+                <TextInput
+                  style={[
+                    styles.locationInput,
+                    activeInput === 'pickup' && styles.activeInput,
+                  ]}
+                  placeholder="Enter pickup location *"
+                  placeholderTextColor="#94A3B8"
+                  value={pickup}
+                  onChangeText={handleSearchLocation}
+                  onFocus={() => setActiveInput('pickup')}
+                />
+                <TouchableOpacity
+                  onPress={getCurrentLocation}
+                  style={styles.gpsButton}
+                  disabled={isLoadingLocation}
+                >
+                  {isLoadingLocation && activeInput === 'pickup' ? (
+                    <ActivityIndicator size="small" color="#3B82F6" />
+                  ) : (
+                    <MaterialIcons
+                      name="my-location"
+                      size={20}
+                      color="#3B82F6"
+                    />
+                  )}
+                </TouchableOpacity>
+              </View>
+
+              {/* Pickup Suggestions - Appears immediately below pickup input */}
+              {activeInput === 'pickup' && pickup.trim().length > 1 && (
+                <View style={styles.suggestionsSection}>
+                  <View style={styles.suggestionHeader}>
+                    <Text style={styles.subSectionTitle}>
+                      Suggested Locations
+                    </Text>
+                    {isSearching && (
+                      <ActivityIndicator size="small" color="#3B82F6" />
+                    )}
+                  </View>
+
+                  {/* Show loading indicator while searching */}
+                  {isSearching && filteredLocations.length === 0 && (
+                    <View style={styles.loadingContainer}>
+                      <ActivityIndicator size="large" color="#3B82F6" />
+                      <Text style={styles.loadingText}>Searching...</Text>
+                    </View>
+                  )}
+
+                  {/* Show suggestions */}
+                  {!isSearching && filteredLocations.length > 0 && (
+                    <>
+                      {filteredLocations.map(item => (
+                        <TouchableOpacity
+                          key={item.id}
+                          style={styles.locationCard}
+                          onPress={() => handleLocationSelect(item)}
+                          activeOpacity={0.7}
+                        >
+                          <View style={styles.locationIconContainer}>
+                            <MaterialIcons
+                              name="location-on"
+                              size={18}
+                              color="#3B82F6"
+                            />
+                          </View>
+                          <View style={styles.locationInfo}>
+                            <Text style={styles.locationName}>{item.name}</Text>
+                            <Text
+                              style={styles.locationAddress}
+                              numberOfLines={2}
+                            >
+                              {item.address}
+                            </Text>
+                          </View>
+                          <MaterialIcons
+                            name="north-west"
+                            size={16}
+                            color="#64748B"
+                          />
+                        </TouchableOpacity>
+                      ))}
+                    </>
+                  )}
+
+                  {/* Show no results message */}
+                  {!isSearching &&
+                    filteredLocations.length === 0 &&
+                    pickup.trim().length > 2 && (
+                      <View style={styles.emptyContainer}>
+                        <MaterialIcons
+                          name="search-off"
+                          size={40}
+                          color="#94A3B8"
+                        />
+                        <Text style={styles.emptyText}>
+                          No locations found for "{pickup}"
+                        </Text>
+                        <Text style={styles.emptySubText}>
+                          Try a different search term
+                        </Text>
+                      </View>
+                    )}
+                </View>
+              )}
+
+              {/* Drop Input */}
+              <View style={[styles.locationInputContainer, { marginTop: 12 }]}>
+                <View style={styles.inputIcon}>
+                  <View style={styles.dropDot} />
+                </View>
+                <TextInput
+                  style={[
+                    styles.locationInput,
+                    activeInput === 'drop' && styles.activeInput,
+                  ]}
+                  placeholder="Enter drop location *"
+                  placeholderTextColor="#94A3B8"
+                  value={drop}
+                  onChangeText={handleSearchLocation}
+                  onFocus={() => setActiveInput('drop')}
+                />
+                <TouchableOpacity
+                  onPress={getCurrentLocation}
+                  style={styles.gpsButton}
+                  disabled={isLoadingLocation}
+                >
+                  {isLoadingLocation && activeInput === 'drop' ? (
+                    <ActivityIndicator size="small" color="#3B82F6" />
+                  ) : (
+                    <MaterialIcons
+                      name="my-location"
+                      size={20}
+                      color="#3B82F6"
+                    />
+                  )}
+                </TouchableOpacity>
+              </View>
+
+              {/* Drop Suggestions - Appears immediately below drop input */}
+              {activeInput === 'drop' && drop.trim().length > 1 && (
+                <View style={styles.suggestionsSection}>
+                  <View style={styles.suggestionHeader}>
+                    <Text style={styles.subSectionTitle}>
+                      Suggested Locations
+                    </Text>
+                    {isSearching && (
+                      <ActivityIndicator size="small" color="#3B82F6" />
+                    )}
+                  </View>
+
+                  {/* Show loading indicator while searching */}
+                  {isSearching && filteredLocations.length === 0 && (
+                    <View style={styles.loadingContainer}>
+                      <ActivityIndicator size="large" color="#3B82F6" />
+                      <Text style={styles.loadingText}>Searching...</Text>
+                    </View>
+                  )}
+
+                  {/* Show suggestions */}
+                  {!isSearching && filteredLocations.length > 0 && (
+                    <>
+                      {filteredLocations.map(item => (
+                        <TouchableOpacity
+                          key={item.id}
+                          style={styles.locationCard}
+                          onPress={() => handleLocationSelect(item)}
+                          activeOpacity={0.7}
+                        >
+                          <View style={styles.locationIconContainer}>
+                            <MaterialIcons
+                              name="location-on"
+                              size={18}
+                              color="#3B82F6"
+                            />
+                          </View>
+                          <View style={styles.locationInfo}>
+                            <Text style={styles.locationName}>{item.name}</Text>
+                            <Text
+                              style={styles.locationAddress}
+                              numberOfLines={2}
+                            >
+                              {item.address}
+                            </Text>
+                          </View>
+                          <MaterialIcons
+                            name="north-west"
+                            size={16}
+                            color="#64748B"
+                          />
+                        </TouchableOpacity>
+                      ))}
+                    </>
+                  )}
+
+                  {/* Show no results message */}
+                  {!isSearching &&
+                    filteredLocations.length === 0 &&
+                    drop.trim().length > 2 && (
+                      <View style={styles.emptyContainer}>
+                        <MaterialIcons
+                          name="search-off"
+                          size={40}
+                          color="#94A3B8"
+                        />
+                        <Text style={styles.emptyText}>
+                          No locations found for "{drop}"
+                        </Text>
+                        <Text style={styles.emptySubText}>
+                          Try a different search term
+                        </Text>
+                      </View>
+                    )}
+                </View>
+              )}
+            </View>
+
+            {/* Sender Details Section - MOVED BELOW */}
             <View style={styles.senderDetailsSection}>
               <Text style={styles.sectionTitle}>Sender Details</Text>
 
@@ -546,123 +782,6 @@ const PickupDropSelection = () => {
                 </View>
               )}
             </View>
-
-            {/* Pickup & Drop Section */}
-            <View style={styles.locationsSection}>
-              <Text style={styles.sectionTitle}>Pickup & Drop Locations</Text>
-
-              <View style={styles.inputsWrapper}>
-                {/* Pickup Input */}
-                <View style={styles.locationInputContainer}>
-                  <View style={styles.inputIcon}>
-                    <View style={styles.pickupDot} />
-                  </View>
-                  <TextInput
-                    style={[
-                      styles.locationInput,
-                      activeInput === 'pickup' && styles.activeInput,
-                    ]}
-                    placeholder="Enter pickup location *"
-                    placeholderTextColor="#94A3B8"
-                    value={pickup}
-                    onChangeText={handleSearchLocation}
-                    onFocus={() => setActiveInput('pickup')}
-                  />
-                  <TouchableOpacity
-                    onPress={getCurrentLocation}
-                    style={styles.gpsButton}
-                    disabled={isLoadingLocation}
-                  >
-                    {isLoadingLocation && activeInput === 'pickup' ? (
-                      <ActivityIndicator size="small" color="#3B82F6" />
-                    ) : (
-                      <MaterialIcons
-                        name="my-location"
-                        size={20}
-                        color="#3B82F6"
-                      />
-                    )}
-                  </TouchableOpacity>
-                </View>
-
-                {/* Drop Input */}
-                <View style={styles.locationInputContainer}>
-                  <View style={styles.inputIcon}>
-                    <View style={styles.dropDot} />
-                  </View>
-                  <TextInput
-                    style={[
-                      styles.locationInput,
-                      activeInput === 'drop' && styles.activeInput,
-                    ]}
-                    placeholder="Enter drop location *"
-                    placeholderTextColor="#94A3B8"
-                    value={drop}
-                    onChangeText={handleSearchLocation}
-                    onFocus={() => setActiveInput('drop')}
-                  />
-                  <TouchableOpacity
-                    onPress={getCurrentLocation}
-                    style={styles.gpsButton}
-                    disabled={isLoadingLocation}
-                  >
-                    {isLoadingLocation && activeInput === 'drop' ? (
-                      <ActivityIndicator size="small" color="#3B82F6" />
-                    ) : (
-                      <MaterialIcons
-                        name="my-location"
-                        size={20}
-                        color="#3B82F6"
-                      />
-                    )}
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </View>
-
-            {/* Location Suggestions - Only show when user is typing */}
-            {((activeInput === 'pickup' && pickup.trim() !== '') ||
-              (activeInput === 'drop' && drop.trim() !== '')) && (
-              <View style={styles.suggestionsSection}>
-                <Text style={styles.subSectionTitle}>Suggested Locations</Text>
-                {filteredLocations.map(item => (
-                  <TouchableOpacity
-                    key={item.id}
-                    style={styles.locationCard}
-                    onPress={() => handleLocationSelect(item)}
-                    activeOpacity={0.7}
-                  >
-                    <View style={styles.locationIconContainer}>
-                      <MaterialIcons
-                        name="location-on"
-                        size={18}
-                        color="#3B82F6"
-                      />
-                    </View>
-                    <View style={styles.locationInfo}>
-                      <Text style={styles.locationName}>{item.name}</Text>
-                      <Text style={styles.locationAddress}>{item.address}</Text>
-                    </View>
-                    <MaterialIcons
-                      name="north-west"
-                      size={16}
-                      color="#64748B"
-                    />
-                  </TouchableOpacity>
-                ))}
-
-                {filteredLocations.length === 0 && (
-                  <View style={styles.emptyContainer}>
-                    <MaterialIcons
-                      name="search-off"
-                      size={40}
-                      color="#94A3B8"
-                    />
-                    <Text style={styles.emptyText}>No locations found</Text>
-                  </View>
-                )}
-              </View>
-            )}
           </ScrollView>
         )}
       </Animated.View>
@@ -984,6 +1103,28 @@ const styles = StyleSheet.create({
     color: '#64748B',
     marginTop: 12,
     textAlign: 'center',
+  },
+  emptySubText: {
+    fontSize: 12,
+    color: '#94A3B8',
+    marginTop: 6,
+    textAlign: 'center',
+  },
+  suggestionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+  },
+  loadingText: {
+    fontSize: 13,
+    color: '#64748B',
+    marginTop: 12,
   },
   footer: {
     padding: 20,

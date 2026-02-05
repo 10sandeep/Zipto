@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -6,28 +6,120 @@ import {
   Text,
   TouchableOpacity,
   Image,
+  PermissionsAndroid,
+  Platform,
 } from 'react-native';
-import MapView, { PROVIDER_GOOGLE, Marker, UrlTile } from 'react-native-maps';
+import Mapbox from '@rnmapbox/maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AppStackParamList } from '../navigation/AppNavigator';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import Geolocation from '@react-native-community/geolocation';
 import BottomTabBar from './BottomTabBar';
+import Spinner from '../components/Spinner';
 
 const { width, height } = Dimensions.get('window');
+
+// Initialize Mapbox OUTSIDE the component
+Mapbox.setAccessToken(
+  'MAPBOX_PUBLIC_TOKEN_REMOVED',
+);
 
 const Home = () => {
   const navigation =
     useNavigation<NativeStackNavigationProp<AppStackParamList>>();
-  const [useOpenStreetMap, setUseOpenStreetMap] = useState(true);
 
-  const [region, setRegion] = useState({
-    latitude: 20.2961,
-    longitude: 85.8245,
-    latitudeDelta: 0.05,
-    longitudeDelta: 0.05,
-  });
+  const cameraRef = useRef<Mapbox.Camera>(null);
+  const [userLocation, setUserLocation] = useState<[number, number] | null>(
+    null,
+  );
+  const [isMapLoading, setIsMapLoading] = useState(true);
+  const [isServicesVisible, setIsServicesVisible] = useState(true);
+  const [locationPermissionGranted, setLocationPermissionGranted] =
+    useState(false);
+
+  // Default center (Bhubaneswar)
+  const defaultCenter: [number, number] = [85.8245, 20.2961];
+
+  useEffect(() => {
+    const requestLocationPermission = async () => {
+      try {
+        if (Platform.OS === 'android') {
+          const granted = await PermissionsAndroid.request(
+            PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+            {
+              title: 'Location Permission',
+              message:
+                'Zipto needs access to your location to show your position on the map.',
+              buttonNeutral: 'Ask Me Later',
+              buttonNegative: 'Cancel',
+              buttonPositive: 'OK',
+            },
+          );
+          if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+            setLocationPermissionGranted(true);
+            startLocationTracking();
+          } else {
+            console.log('Location permission denied');
+          }
+        } else {
+          setLocationPermissionGranted(true);
+          startLocationTracking();
+        }
+      } catch (err) {
+        console.warn('Permission error:', err);
+      }
+    };
+
+    requestLocationPermission();
+  }, []);
+
+  const startLocationTracking = () => {
+    Geolocation.getCurrentPosition(
+      position => {
+        const { latitude, longitude } = position.coords;
+        const newLocation: [number, number] = [longitude, latitude];
+        setUserLocation(newLocation);
+
+        // Move camera to user's location
+        if (cameraRef.current) {
+          cameraRef.current.setCamera({
+            centerCoordinate: newLocation,
+            zoomLevel: 15,
+            animationDuration: 1000,
+          });
+        }
+      },
+      error => {
+        console.log('Error getting location:', error);
+      },
+      { enableHighAccuracy: true, timeout: 30000, maximumAge: 10000 },
+    );
+
+    const watchId = Geolocation.watchPosition(
+      position => {
+        const { latitude, longitude } = position.coords;
+        setUserLocation([longitude, latitude]);
+      },
+      error => console.log('Error watching location:', error),
+      { enableHighAccuracy: true, distanceFilter: 10 },
+    );
+
+    return () => Geolocation.clearWatch(watchId);
+  };
+
+  const centerOnUserLocation = () => {
+    if (userLocation && cameraRef.current) {
+      cameraRef.current.setCamera({
+        centerCoordinate: userLocation,
+        zoomLevel: 15,
+        animationDuration: 500,
+      });
+    } else {
+      startLocationTracking();
+    }
+  };
 
   const services = [
     {
@@ -62,42 +154,36 @@ const Home = () => {
 
   return (
     <View style={styles.container}>
-      {/* Map with Light Style */}
-      <MapView
-        provider={PROVIDER_GOOGLE}
+      {/* Mapbox Map */}
+      <Mapbox.MapView
         style={styles.map}
-        region={region}
-        onRegionChangeComplete={setRegion}
-        customMapStyle={lightMapStyle}
+        styleURL={Mapbox.StyleURL.Street}
+        logoEnabled={false}
+        attributionEnabled={false}
+        onDidFinishLoadingMap={() => setIsMapLoading(false)}
       >
-        {/* OpenStreetMap Tile Layer */}
-        {useOpenStreetMap && (
-          <UrlTile
-            urlTemplate="https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}.png"
-            maximumZ={19}
-            flipY={false}
-          />
+        <Mapbox.Camera
+          ref={cameraRef}
+          zoomLevel={15}
+          centerCoordinate={userLocation || defaultCenter}
+          animationMode="flyTo"
+          animationDuration={1000}
+        />
+
+        {/* Custom User Location Marker using ShapeSource + SymbolLayer or PointAnnotation */}
+        {userLocation && (
+          <Mapbox.MarkerView
+            id="userLocationMarker"
+            coordinate={userLocation}
+            anchor={{ x: 0.5, y: 0.5 }}
+          >
+            <View style={styles.customMarker}>
+              <View style={styles.userLocationPulse} />
+              <View style={styles.userLocationDot} />
+            </View>
+          </Mapbox.MarkerView>
         )}
-
-        {/* Marker at Bhubaneswar */}
-        <Marker coordinate={{ latitude: 20.2961, longitude: 85.8245 }}>
-          <View style={styles.customMarker}>
-            <MaterialIcons name="location-on" size={40} color="#3B82F6" />
-          </View>
-        </Marker>
-      </MapView>
-
-      {/* Map Toggle Button */}
-      <TouchableOpacity
-        style={styles.mapToggleButton}
-        onPress={() => setUseOpenStreetMap(!useOpenStreetMap)}
-        activeOpacity={0.8}
-      >
-        <MaterialIcons name="layers" size={20} color="#0F172A" />
-        <Text style={styles.mapToggleText}>
-          {useOpenStreetMap ? 'OSM' : 'Google'}
-        </Text>
-      </TouchableOpacity>
+      </Mapbox.MapView>
 
       {/* Main Content Overlay */}
       <SafeAreaView style={styles.mainOverlay} edges={['top']}>
@@ -121,142 +207,88 @@ const Home = () => {
             style={styles.walletButton}
             activeOpacity={0.7}
           >
-            <MaterialIcons name="account-balance-wallet" size={24} color="#3B82F6" />
+            <MaterialIcons
+              name="account-balance-wallet"
+              size={24}
+              color="#3B82F6"
+            />
             <Text style={styles.walletText}>Wallet</Text>
           </TouchableOpacity>
         </View>
 
         {/* Bottom Content Container */}
         <View style={styles.bottomContainer}>
-          {/* Services Grid */}
-          <View style={styles.servicesContainer}>
-            <Text style={styles.servicesTitle}>Our Services</Text>
-            <View style={styles.servicesGrid}>
-              {services.map(service => (
-                <TouchableOpacity
-                  key={service.id}
-                  style={styles.serviceCard}
-                  onPress={() => navigation.navigate('PickupDropSelection')}
-                  activeOpacity={0.8}
-                >
-                  <View
-                    style={[
-                      styles.serviceIconContainer,
-                      { backgroundColor: service.gradient[0] },
-                    ]}
+          {/* Services Grid - Conditional Rendering */}
+          {isServicesVisible && (
+            <View style={styles.servicesContainer}>
+              <Text style={styles.servicesTitle}>Our Services</Text>
+              <View style={styles.servicesGrid}>
+                {services.map(service => (
+                  <TouchableOpacity
+                    key={service.id}
+                    style={styles.serviceCard}
+                    onPress={() => navigation.navigate('PickupDropSelection')}
+                    activeOpacity={0.8}
                   >
-                    <MaterialIcons
-                      name={service.icon}
-                      size={32}
-                      color="#FFFFFF"
-                    />
-                  </View>
-                  <Text style={styles.serviceTitle}>{service.title}</Text>
-                  <Text style={styles.serviceDescription}>
-                    {service.description}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+                    <View
+                      style={[
+                        styles.serviceIconContainer,
+                        { backgroundColor: service.gradient[0] },
+                      ]}
+                    >
+                      <MaterialIcons
+                        name={service.icon}
+                        size={32}
+                        color="#FFFFFF"
+                      />
+                    </View>
+                    <Text style={styles.serviceTitle}>{service.title}</Text>
+                    <Text style={styles.serviceDescription}>
+                      {service.description}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
             </View>
-          </View>
+          )}
         </View>
       </SafeAreaView>
 
       {/* Bottom Navigation Bar */}
       <BottomTabBar />
+
+      {/* Center on User Location Button */}
+      <TouchableOpacity
+        style={styles.locationButton}
+        onPress={centerOnUserLocation}
+        activeOpacity={0.8}
+      >
+        <MaterialIcons name="my-location" size={24} color="#3B82F6" />
+      </TouchableOpacity>
+
+      {/* Floating Action Button */}
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => setIsServicesVisible(!isServicesVisible)}
+        activeOpacity={0.8}
+      >
+        <MaterialIcons
+          name={isServicesVisible ? 'close' : 'menu'}
+          size={28}
+          color="#FFFFFF"
+        />
+      </TouchableOpacity>
+
+      {/* Loading Spinner */}
+      <Spinner
+        visible={isMapLoading}
+        overlay={true}
+        size="large"
+        color="#3B82F6"
+      />
     </View>
   );
 };
-
-// Light map style for Google Maps
-const lightMapStyle = [
-  {
-    elementType: 'geometry',
-    stylers: [{ color: '#f5f5f5' }],
-  },
-  {
-    elementType: 'labels.icon',
-    stylers: [{ visibility: 'on' }],
-  },
-  {
-    elementType: 'labels.text.fill',
-    stylers: [{ color: '#616161' }],
-  },
-  {
-    elementType: 'labels.text.stroke',
-    stylers: [{ color: '#f5f5f5' }],
-  },
-  {
-    featureType: 'administrative.land_parcel',
-    elementType: 'labels.text.fill',
-    stylers: [{ color: '#bdbdbd' }],
-  },
-  {
-    featureType: 'poi',
-    elementType: 'geometry',
-    stylers: [{ color: '#eeeeee' }],
-  },
-  {
-    featureType: 'poi',
-    elementType: 'labels.text.fill',
-    stylers: [{ color: '#757575' }],
-  },
-  {
-    featureType: 'poi.park',
-    elementType: 'geometry',
-    stylers: [{ color: '#e5e5e5' }],
-  },
-  {
-    featureType: 'poi.park',
-    elementType: 'labels.text.fill',
-    stylers: [{ color: '#9e9e9e' }],
-  },
-  {
-    featureType: 'road',
-    elementType: 'geometry',
-    stylers: [{ color: '#ffffff' }],
-  },
-  {
-    featureType: 'road.arterial',
-    elementType: 'labels.text.fill',
-    stylers: [{ color: '#757575' }],
-  },
-  {
-    featureType: 'road.highway',
-    elementType: 'geometry',
-    stylers: [{ color: '#dadada' }],
-  },
-  {
-    featureType: 'road.highway',
-    elementType: 'labels.text.fill',
-    stylers: [{ color: '#616161' }],
-  },
-  {
-    featureType: 'road.local',
-    elementType: 'labels.text.fill',
-    stylers: [{ color: '#9e9e9e' }],
-  },
-  {
-    featureType: 'transit.line',
-    elementType: 'geometry',
-    stylers: [{ color: '#e5e5e5' }],
-  },
-  {
-    featureType: 'transit.station',
-    elementType: 'geometry',
-    stylers: [{ color: '#eeeeee' }],
-  },
-  {
-    featureType: 'water',
-    elementType: 'geometry',
-    stylers: [{ color: '#c9c9c9' }],
-  },
-  {
-    featureType: 'water',
-    elementType: 'labels.text.fill',
-    stylers: [{ color: '#9e9e9e' }],
-  },
-];
 
 const styles = StyleSheet.create({
   container: {
@@ -271,31 +303,28 @@ const styles = StyleSheet.create({
   customMarker: {
     alignItems: 'center',
     justifyContent: 'center',
+    width: 40,
+    height: 40,
   },
-  mapToggleButton: {
+  userLocationPulse: {
     position: 'absolute',
-    bottom: 280,
-    right: 16,
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 25,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    elevation: 6,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    zIndex: 1,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(59, 130, 246, 0.2)',
   },
-  mapToggleText: {
-    color: '#0F172A',
-    fontSize: 14,
-    fontWeight: '600',
+  userLocationDot: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: '#3B82F6',
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
+    elevation: 6,
+    shadowColor: '#3B82F6',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 4,
   },
   mainOverlay: {
     flex: 1,
@@ -320,13 +349,14 @@ const styles = StyleSheet.create({
     borderColor: '#E2E8F0',
   },
   logoSection: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 8,
     flex: 1,
   },
   logoContainer: {
     width: 40,
     height: 40,
-    marginRight:200,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -335,8 +365,7 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   ziptoText: {
-    fontSize: 14,
-     marginRight:200,
+    fontSize: 18,
     fontWeight: 'bold',
     fontFamily: 'Poppins-Regular',
     color: '#3B82F6',
@@ -417,6 +446,40 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Regular',
     color: '#64748B',
     textAlign: 'center',
+  },
+  locationButton: {
+    position: 'absolute',
+    bottom: 170,
+    right: 20,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  fab: {
+    position: 'absolute',
+    bottom: 100,
+    right: 20,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#3B82F6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
   },
 });
 

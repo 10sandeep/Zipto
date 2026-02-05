@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,98 +7,93 @@ import {
   TouchableOpacity,
   SafeAreaView,
   Animated,
-  Easing,
+  ActivityIndicator,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import { vehicleApi, VehicleType } from '../api/vehicle';
 
+// Emoji mapping for vehicle types
+const VEHICLE_EMOJIS: Record<string, string> = {
+  bike: '🏍️',
+  tata_ace: '🚐',
+  pickup_van: '🚐',
+  mini_truck: '🚚',
+};
 
-const VEHICLES = [
-  {
-    id: '1',
-    name: 'Bike',
-    priceRange: '₹50-150',
-    basePrice: 50,
-    time: '5 min',
-    capacity: '20 kg',
-    icon: 'two-wheeler',
-    emoji: '🏍️',
-  },
-  {
-    id: '2',
-    name: 'Tata Ace',
-    priceRange: '₹250-500',
-    basePrice: 250,
-    time: '12 min',
-    capacity: '750 kg',
-    icon: 'local-shipping',
-    emoji: '🚐',
-  },
-  {
-    id: '3',
-    name: 'Truck',
-    priceRange: '₹450-800',
-    basePrice: 450,
-    time: '15 min',
-    capacity: '1000 kg',
-    icon: 'local-shipping',
-    emoji: '🚚',
-  },
-  {
-    id: '4',
-    name: '3 Wheeler',
-    priceRange: '₹200-400',
-    basePrice: 200,
-    time: '8 min',
-    capacity: '500 kg',
-    icon: 'local-shipping',
-    emoji: '🛺',
-  },
-];
+// UI Vehicle type (transformed from API)
+interface UIVehicle {
+  id: string;
+  name: string;
+  priceRange: string;
+  basePrice: number;
+  capacity: string;
+  emoji: string;
+}
 
 const VehicleSelection = () => {
   const navigation = useNavigation<any>();
-  const [selectedVehicle, setSelectedVehicle] = useState(null);
+  const route = useRoute<any>();
+  const [selectedVehicle, setSelectedVehicle] = useState<string | null>(null);
   const [withHelper, setWithHelper] = useState(false);
+  const [vehicles, setVehicles] = useState<UIVehicle[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Animation values
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(30)).current;
-  const buttonScale = useRef(new Animated.Value(0)).current;
+  // Get data from route params
+  const { pickup, drop, pickupCoords, dropCoords } = route.params || {};
 
+  // Animated values
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+  const slideAnim = useRef(new Animated.Value(0)).current;
+  const buttonScale = useRef(new Animated.Value(1)).current;
+
+  // Fetch vehicle types on mount
   useEffect(() => {
-    // Content fade in
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 600,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 600,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-    ]).start();
-
-    // Button entrance
-    setTimeout(() => {
-      Animated.spring(buttonScale, {
-        toValue: 1,
-        friction: 6,
-        tension: 40,
-        useNativeDriver: true,
-      }).start();
-    }, 300);
+    fetchVehicleTypes();
   }, []);
+
+  const fetchVehicleTypes = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await vehicleApi.getVehicleTypes();
+
+      if (response.success && response.data) {
+        // Transform API data to UI format
+        const transformedVehicles: UIVehicle[] = response.data.map(
+          (vehicle: VehicleType) => ({
+            id: vehicle.type,
+            name: vehicle.name,
+            priceRange: `From ₹${vehicle.base_fare}`,
+            basePrice: vehicle.base_fare,
+            capacity: vehicle.capacity_range,
+            emoji: VEHICLE_EMOJIS[vehicle.type] || '🚗',
+          }),
+        );
+
+        setVehicles(transformedVehicles);
+      } else {
+        throw new Error('Failed to fetch vehicle types');
+      }
+    } catch (err) {
+      console.error('Error fetching vehicle types:', err);
+      setError('Failed to load vehicles. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleBook = () => {
     if (selectedVehicle) {
-      const vehicle = VEHICLES.find(v => v.id === selectedVehicle);
+      const vehicle = vehicles.find((v: UIVehicle) => v.id === selectedVehicle);
       const helperCost = withHelper ? 300 : 0;
       navigation.navigate('FareEstimate', {
         vehicle,
+        pickup,
+        drop,
+        pickupCoords,
+        dropCoords,
         withHelper,
         helperCost,
       });
@@ -107,17 +102,14 @@ const VehicleSelection = () => {
 
   const calculateTotalPrice = () => {
     if (!selectedVehicle) return '₹0';
-    const vehicle = VEHICLES.find(v => v.id === selectedVehicle);
+    const vehicle = vehicles.find((v: UIVehicle) => v.id === selectedVehicle);
     const helperCost = withHelper ? 300 : 0;
-    return `₹${vehicle.basePrice + helperCost}`;
+    return `₹${vehicle?.basePrice || 0 + helperCost}`;
   };
 
-  const renderVehicleCard = ({ item }) => (
+  const renderVehicleCard = ({ item }: { item: UIVehicle }) => (
     <TouchableOpacity
-      style={[
-        styles.card,
-        selectedVehicle === item.id && styles.selectedCard,
-      ]}
+      style={[styles.card, selectedVehicle === item.id && styles.selectedCard]}
       onPress={() => setSelectedVehicle(item.id)}
       activeOpacity={0.7}
     >
@@ -126,9 +118,7 @@ const VehicleSelection = () => {
       </View>
       <View style={styles.info}>
         <Text style={styles.name}>{item.name}</Text>
-        <Text style={styles.details}>
-          {item.capacity} • {item.time}
-        </Text>
+        <Text style={styles.details}>{item.capacity}</Text>
       </View>
       <View style={styles.priceContainer}>
         <Text style={styles.priceRange}>{item.priceRange}</Text>
@@ -167,10 +157,7 @@ const VehicleSelection = () => {
         <View style={styles.helperPriceContainer}>
           <Text style={styles.helperPrice}>+₹300</Text>
           <View
-            style={[
-              styles.checkbox,
-              withHelper && styles.checkboxSelected,
-            ]}
+            style={[styles.checkbox, withHelper && styles.checkboxSelected]}
           >
             {withHelper && <Icon name="check" size={16} color="#FFFFFF" />}
           </View>
@@ -184,7 +171,10 @@ const VehicleSelection = () => {
       <SafeAreaView style={styles.safeArea}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}
+          >
             <Icon name="arrow-back" size={24} color="#1E293B" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Select Vehicle</Text>
@@ -200,16 +190,36 @@ const VehicleSelection = () => {
             },
           ]}
         >
-          <FlatList
-            data={VEHICLES}
-            keyExtractor={item => item.id}
-            renderItem={renderVehicleCard}
-            ListHeaderComponent={renderListHeader}
-            ListFooterComponent={renderListFooter}
-            contentContainerStyle={styles.listContent}
-            showsVerticalScrollIndicator={false}
-            bounces={true}
-          />
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#3B82F6" />
+              <Text style={styles.loadingText}>Loading vehicles...</Text>
+            </View>
+          ) : error ? (
+            <View style={styles.errorContainer}>
+              <Icon name="error-outline" size={48} color="#EF4444" />
+              <Text style={styles.errorText}>{error}</Text>
+              <TouchableOpacity
+                style={styles.retryButton}
+                onPress={fetchVehicleTypes}
+                activeOpacity={0.7}
+              >
+                <Icon name="refresh" size={20} color="#FFFFFF" />
+                <Text style={styles.retryButtonText}>Retry</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <FlatList
+              data={vehicles}
+              keyExtractor={item => item.id}
+              renderItem={renderVehicleCard}
+              ListHeaderComponent={renderListHeader}
+              ListFooterComponent={renderListFooter}
+              contentContainerStyle={styles.listContent}
+              showsVerticalScrollIndicator={false}
+              bounces={true}
+            />
+          )}
         </Animated.View>
 
         {/* Footer */}
@@ -226,7 +236,10 @@ const VehicleSelection = () => {
             }}
           >
             <TouchableOpacity
-              style={[styles.nextButton, !selectedVehicle && styles.nextButtonDisabled]}
+              style={[
+                styles.nextButton,
+                !selectedVehicle && styles.nextButtonDisabled,
+              ]}
               onPress={handleBook}
               disabled={!selectedVehicle}
               activeOpacity={0.8}
@@ -239,7 +252,11 @@ const VehicleSelection = () => {
               >
                 Continue to Book
               </Text>
-              <Text style={[styles.arrow, !selectedVehicle && styles.arrowDisabled]}>→</Text>
+              <Text
+                style={[styles.arrow, !selectedVehicle && styles.arrowDisabled]}
+              >
+                →
+              </Text>
             </TouchableOpacity>
           </Animated.View>
         </View>
@@ -477,6 +494,45 @@ const styles = StyleSheet.create({
   },
   arrowDisabled: {
     color: '#94A3B8',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#64748B',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+    paddingHorizontal: 40,
+  },
+  errorText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#64748B',
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  retryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#3B82F6',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+    gap: 8,
+  },
+  retryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
 

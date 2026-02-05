@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   StyleSheet,
@@ -6,20 +6,18 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
-  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AppStackParamList } from '../navigation/AppNavigator';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import { useAppDispatch } from '../store';
-import { logout } from '../store';
+import { useAuthStore } from '../store/useAuthStore';
 import BottomTabBar from './BottomTabBar';
 
 const Profile = () => {
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
-  const dispatch = useAppDispatch();
+  const { user, logout } = useAuthStore();
 
   const handleLogout = () => {
     Alert.alert('Logout', 'Are you sure you want to logout?', [
@@ -28,7 +26,7 @@ const Profile = () => {
         text: 'Logout',
         style: 'destructive',
         onPress: () => {
-          dispatch(logout());
+          logout();
         },
       },
     ]);
@@ -171,28 +169,22 @@ const Profile = () => {
             </View>
             
             <View style={styles.profileInfo}>
-              <Text style={styles.userName}>John Doe</Text>
-              <Text style={styles.userEmail}>john.doe@example.com</Text>
-              <Text style={styles.userPhone}>+91 98765 43210</Text>
+              <Text style={styles.userName}>{user?.name || 'User'}</Text>
+              {user?.email && <Text style={styles.userEmail}>{user.email}</Text>}
+              <Text style={styles.userPhone}>{user?.phone || 'No phone'}</Text>
             </View>
 
             {/* Stats Row */}
             <View style={styles.statsRow}>
               <View style={styles.statBox}>
                 <MaterialIcons name="account-balance-wallet" size={24} color="#3B82F6" />
-                <Text style={styles.statValue}>₹1,250</Text>
+                <Text style={styles.statValue}>₹0</Text>
                 <Text style={styles.statLabel}>Wallet</Text>
               </View>
               <View style={styles.statDivider} />
               <View style={styles.statBox}>
-                <MaterialIcons name="stars" size={24} color="#F59E0B" />
-                <Text style={styles.statValue}>850</Text>
-                <Text style={styles.statLabel}>Coins</Text>
-              </View>
-              <View style={styles.statDivider} />
-              <View style={styles.statBox}>
                 <MaterialIcons name="local-shipping" size={24} color="#10B981" />
-                <Text style={styles.statValue}>24</Text>
+                <Text style={styles.statValue}>0</Text>
                 <Text style={styles.statLabel}>Orders</Text>
               </View>
             </View>
