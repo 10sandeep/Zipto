@@ -13,6 +13,11 @@ const geocodingClient = axios.create({
   baseURL: 'https://api.mapbox.com/search/geocode/v6',
 });
 
+// Mapbox Directions API client
+const directionsClient = axios.create({
+  baseURL: 'https://api.mapbox.com/directions/v5/mapbox',
+});
+
 export const mapboxApi = {
   /**
    * Search for places using Mapbox Search Box API v1
@@ -138,6 +143,29 @@ export const mapboxApi = {
       return null;
     } catch (error) {
       console.error('Mapbox retrieve place error:', error);
+      return null;
+    }
+  },
+
+  /**
+   * Get driving directions between two points
+   * Returns the route geometry as coordinates array
+   */
+  getDirections: async (
+    origin: [number, number],
+    destination: [number, number],
+  ): Promise<[number, number][] | null> => {
+    try {
+      const url = `/driving/${origin[0]},${origin[1]};${destination[0]},${destination[1]}?access_token=${MAPBOX_ACCESS_TOKEN}&geometries=geojson&overview=full`;
+
+      const response = await directionsClient.get(url);
+
+      if (response.data.routes && response.data.routes.length > 0) {
+        return response.data.routes[0].geometry.coordinates as [number, number][];
+      }
+      return null;
+    } catch (error) {
+      console.error('Mapbox Directions API error:', error);
       return null;
     }
   },

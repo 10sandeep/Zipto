@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   StyleSheet,
   Text,
   TouchableOpacity,
   ScrollView,
-  Animated,
+  ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -14,11 +15,88 @@ import { AppStackParamList } from '../navigation/AppNavigator';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import LinearGradient from 'react-native-linear-gradient';
 import BottomTabBar from './BottomTabBar';
+import { vehicleApi, CoinTransaction } from '../api/vehicle';
 
 const Coins = () => {
   const navigation =
     useNavigation<NativeStackNavigationProp<AppStackParamList>>();
-  const [availableCoins] = useState(850);
+
+  const [coins, setCoins] = useState(0);
+  const [rupeeValue, setRupeeValue] = useState(0);
+  const [rate, setRate] = useState('');
+  const [transactions, setTransactions] = useState<CoinTransaction[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [balanceError, setBalanceError] = useState(false);
+
+  const fetchData = useCallback(async (isRefresh = false) => {
+    try {
+      if (!isRefresh) setLoading(true);
+      setBalanceError(false);
+
+      const [balanceRes, historyRes] = await Promise.all([
+        vehicleApi.getCoinsBalance().catch(() => null),
+        vehicleApi.getCoinsHistory().catch(() => null),
+      ]);
+
+      if (balanceRes) {
+        setCoins(balanceRes.coins ?? 0);
+        setRupeeValue(balanceRes.rupee_value ?? 0);
+        setRate(balanceRes.rate ?? '');
+      } else {
+        setBalanceError(true);
+      }
+
+      if (historyRes?.transactions) {
+        setTransactions(historyRes.transactions);
+      }
+    } catch (err) {
+      console.error('Failed to fetch coins data:', err);
+      setBalanceError(true);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchData(true);
+  };
+
+  const formatDate = (dateStr: string) => {
+    try {
+      const date = new Date(dateStr);
+      const day = date.getDate().toString().padStart(2, '0');
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const month = months[date.getMonth()];
+      let hours = date.getHours();
+      const mins = date.getMinutes().toString().padStart(2, '0');
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      hours = hours % 12 || 12;
+      return `${day} ${month} • ${hours}:${mins} ${ampm}`;
+    } catch {
+      return dateStr;
+    }
+  };
+
+  const getTransactionIcon = (type: string) => {
+    if (type === 'earned') return 'add-circle';
+    if (type === 'redeemed' || type === 'spent') return 'remove-circle';
+    if (type === 'transferred') return 'swap-horiz';
+    return 'stars';
+  };
+
+  const getTransactionColor = (type: string) => {
+    if (type === 'earned') return '#10B981';
+    if (type === 'redeemed' || type === 'spent') return '#EF4444';
+    if (type === 'transferred') return '#F59E0B';
+    return '#6366F1';
+  };
 
   const useCoinsOptions = [
     {
@@ -26,78 +104,66 @@ const Coins = () => {
       title: 'Transfer to Wallet',
       description: 'Convert coins to wallet balance',
       icon: 'account-balance-wallet',
-      color: '#3B82F6',
       gradient: ['#3B82F6', '#2563EB'],
       badge: null,
-      onPress: () => {
-        navigation.navigate('TransferToWallet');
-      },
-    },
-    {
-      id: 2,
-      title: 'Get Discount',
-      description: 'Use coins for delivery discount',
-      icon: 'local-offer',
-      color: '#10B981',
-      gradient: ['#10B981', '#059669'],
-      badge: 'POPULAR',
-      onPress: () => {
-        navigation.navigate('GetDiscount');
-      },
-    },
-    {
-      id: 3,
-      title: 'Redeem Vouchers',
-      description: 'Exchange for brand vouchers',
-      icon: 'card-giftcard',
-      color: '#F59E0B',
-      gradient: ['#F59E0B', '#D97706'],
-      badge: 'NEW',
-      onPress: () => {
-        navigation.navigate('RedeemVouchers');
-      },
-    },
-  ];
-
-  const learnMoreOptions = [
-    {
-      id: 1,
-      title: 'How to Earn Coins?',
-      description: 'Complete orders and refer friends',
-      icon: 'add-circle',
-      color: '#8B5CF6',
-      onPress: () => {
-        console.log('Learn earn coins');
-      },
-    },
-    {
-      id: 2,
-      title: 'How to Use Coins?',
-      description: 'Redeem for rewards and discounts',
-      icon: 'help-outline',
-      color: '#EC4899',
-      onPress: () => {
-        console.log('Learn use coins');
-      },
-    },
-    {
-      id: 3,
-      title: 'Coins Expiry',
-      description: 'Valid for 12 months from earning',
-      icon: 'schedule',
-      color: '#EF4444',
-      onPress: () => {
-        console.log('Coins expiry info');
-      },
+      onPress: () => navigation.navigate('TransferToWallet'),
     },
   ];
 
   const earnCoinsWays = [
-    { icon: 'local-shipping', text: 'Complete deliveries', coins: '+10' },
-    { icon: 'share', text: 'Refer friends', coins: '+50' },
-    { icon: 'star', text: 'Write reviews', coins: '+5' },
-    { icon: 'celebration', text: 'Special events', coins: '+100' },
+    {
+      icon: 'local-shipping',
+      text: 'Complete deliveries',
+      coins: 'Per order',
+      onPress: () => navigation.navigate('Home'),
+    },
+    {
+      icon: 'share',
+      text: 'Refer friends',
+      coins: '+50',
+      onPress: () => {
+        // Share referral link
+        const { Share } = require('react-native');
+        Share.share({
+          message: 'Join Zipto and get 50 bonus coins! Download now: https://zipto.app/refer',
+          title: 'Refer Zipto',
+        });
+      },
+    },
+    {
+      icon: 'star',
+      text: 'Write reviews',
+      coins: '+5',
+      onPress: () => navigation.navigate('MyOrders'),
+    },
+    {
+      icon: 'receipt-long',
+      text: 'View transaction history',
+      coins: 'All',
+      onPress: () => navigation.navigate('TransactionHistory'),
+    },
   ];
+
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <SafeAreaView style={styles.safeArea} edges={['top']}>
+          <View style={styles.header}>
+            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+              <MaterialIcons name="arrow-back" size={24} color="#0F172A" />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>My Coins</Text>
+            <View style={styles.historyButton} />
+          </View>
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#6366F1" />
+            <Text style={styles.loadingText}>Loading coins...</Text>
+          </View>
+        </SafeAreaView>
+        <BottomTabBar />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -123,6 +189,9 @@ const Coins = () => {
           style={styles.scrollView}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#6366F1']} />
+          }
         >
           {/* Coins Balance Card */}
           <View style={styles.balanceCardContainer}>
@@ -138,11 +207,24 @@ const Coins = () => {
 
               <View style={styles.balanceInfo}>
                 <Text style={styles.balanceLabel}>Available Coins</Text>
-                <Text style={styles.balanceAmount}>{availableCoins}</Text>
-                <Text style={styles.balanceSubtext}>
-                  ≈ ₹{Math.floor(availableCoins / 10)}
-                </Text>
+                {balanceError ? (
+                  <Text style={styles.balanceAmount}>--</Text>
+                ) : (
+                  <>
+                    <Text style={styles.balanceAmount}>{coins}</Text>
+                    <Text style={styles.balanceSubtext}>
+                      ≈ ₹{rupeeValue.toFixed(2)}
+                    </Text>
+                  </>
+                )}
               </View>
+
+              {rate ? (
+                <View style={styles.rateTag}>
+                  <MaterialIcons name="info-outline" size={14} color="#E0E7FF" />
+                  <Text style={styles.rateText}>{rate}</Text>
+                </View>
+              ) : null}
 
               {/* Decorative circles */}
               <View style={[styles.decorCircle, styles.decorCircle1]} />
@@ -162,6 +244,56 @@ const Coins = () => {
               <MaterialIcons name="chevron-right" size={20} color="#94A3B8" />
             </TouchableOpacity>
           </View>
+
+          {/* Recent Transactions */}
+          {transactions.length > 0 && (
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>Recent Activity</Text>
+                <TouchableOpacity onPress={() => navigation.navigate('TransactionHistory')}>
+                  <Text style={styles.seeAllText}>See All</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={styles.transactionsCard}>
+                {transactions.slice(0, 5).map((tx, index) => {
+                  const color = getTransactionColor(tx.type);
+                  const isEarned = tx.type === 'earned';
+                  return (
+                    <React.Fragment key={tx.id}>
+                      <View style={styles.transactionItem}>
+                        <View style={[styles.txIconContainer, { backgroundColor: color + '15' }]}>
+                          <MaterialIcons
+                            name={getTransactionIcon(tx.type)}
+                            size={22}
+                            color={color}
+                          />
+                        </View>
+                        <View style={styles.txInfo}>
+                          <Text style={styles.txDescription} numberOfLines={1}>
+                            {tx.description}
+                          </Text>
+                          <View style={styles.txMeta}>
+                            <Text style={styles.txDate}>{formatDate(tx.created_at)}</Text>
+                            {tx.multiplier > 1 && (
+                              <View style={styles.multiplierTag}>
+                                <Text style={styles.multiplierText}>{tx.multiplier.toFixed(1)}x</Text>
+                              </View>
+                            )}
+                          </View>
+                        </View>
+                        <Text style={[styles.txCoins, { color }]}>
+                          {isEarned ? '+' : '-'}{tx.coins}
+                        </Text>
+                      </View>
+                      {index < Math.min(transactions.length, 5) - 1 && (
+                        <View style={styles.txDivider} />
+                      )}
+                    </React.Fragment>
+                  );
+                })}
+              </View>
+            </View>
+          )}
 
           {/* Use Coins Section */}
           <View style={styles.section}>
@@ -219,7 +351,11 @@ const Coins = () => {
             <View style={styles.earnCard}>
               {earnCoinsWays.map((way, index) => (
                 <React.Fragment key={index}>
-                  <View style={styles.earnItem}>
+                  <TouchableOpacity
+                    style={styles.earnItem}
+                    onPress={way.onPress}
+                    activeOpacity={0.7}
+                  >
                     <View style={styles.earnIconContainer}>
                       <MaterialIcons
                         name={way.icon}
@@ -231,52 +367,10 @@ const Coins = () => {
                     <View style={styles.earnCoinsTag}>
                       <Text style={styles.earnCoinsText}>{way.coins}</Text>
                     </View>
-                  </View>
+                    <MaterialIcons name="chevron-right" size={20} color="#94A3B8" />
+                  </TouchableOpacity>
                   {index < earnCoinsWays.length - 1 && (
                     <View style={styles.earnDivider} />
-                  )}
-                </React.Fragment>
-              ))}
-            </View>
-          </View>
-
-          {/* Learn More Section */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Learn More</Text>
-            <View style={styles.learnCard}>
-              {learnMoreOptions.map((option, index) => (
-                <React.Fragment key={option.id}>
-                  <TouchableOpacity
-                    style={styles.learnItem}
-                    onPress={option.onPress}
-                    activeOpacity={0.7}
-                  >
-                    <View
-                      style={[
-                        styles.learnIconContainer,
-                        { backgroundColor: `${option.color}15` },
-                      ]}
-                    >
-                      <MaterialIcons
-                        name={option.icon}
-                        size={24}
-                        color={option.color}
-                      />
-                    </View>
-                    <View style={styles.learnTextContainer}>
-                      <Text style={styles.learnTitle}>{option.title}</Text>
-                      <Text style={styles.learnDescription}>
-                        {option.description}
-                      </Text>
-                    </View>
-                    <MaterialIcons
-                      name="chevron-right"
-                      size={24}
-                      color="#94A3B8"
-                    />
-                  </TouchableOpacity>
-                  {index < learnMoreOptions.length - 1 && (
-                    <View style={styles.learnDivider} />
                   )}
                 </React.Fragment>
               ))}
@@ -287,7 +381,7 @@ const Coins = () => {
           <View style={styles.infoBanner}>
             <MaterialIcons name="info" size={20} color="#3B82F6" />
             <Text style={styles.infoBannerText}>
-              10 coins = ₹1. Use your coins for discounts on your next delivery!
+              {rate || '100 coins = ₹2'}. Use your coins for discounts on your next delivery!
             </Text>
           </View>
         </ScrollView>
@@ -328,7 +422,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    fontFamily: 'Poppins-Regular',
     color: '#0F172A',
   },
   historyButton: {
@@ -339,11 +432,21 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 15,
+    color: '#64748B',
+  },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 100, // Space for bottom navigation
+    paddingBottom: 100,
   },
   balanceCardContainer: {
     padding: 16,
@@ -371,21 +474,35 @@ const styles = StyleSheet.create({
   },
   balanceLabel: {
     fontSize: 14,
-    fontFamily: 'Poppins-Regular',
     color: '#E0E7FF',
     marginBottom: 8,
   },
   balanceAmount: {
     fontSize: 48,
     fontWeight: 'bold',
-    fontFamily: 'Poppins-Regular',
     color: '#FFFFFF',
     marginBottom: 4,
   },
   balanceSubtext: {
     fontSize: 16,
-    fontFamily: 'Poppins-Regular',
     color: '#E0E7FF',
+  },
+  rateTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginTop: 12,
+    gap: 4,
+    zIndex: 1,
+  },
+  rateText: {
+    fontSize: 12,
+    color: '#E0E7FF',
+    fontWeight: '500',
   },
   decorCircle: {
     position: 'absolute',
@@ -427,7 +544,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     fontWeight: '600',
-    fontFamily: 'Poppins-Regular',
     color: '#0F172A',
     marginLeft: 12,
   },
@@ -435,12 +551,85 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     marginBottom: 24,
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    fontFamily: 'Poppins-Regular',
     color: '#0F172A',
     marginBottom: 16,
+  },
+  seeAllText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#6366F1',
+    marginBottom: 16,
+  },
+  transactionsCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 4,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  transactionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+  },
+  txIconContainer: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  txInfo: {
+    flex: 1,
+  },
+  txDescription: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#1E293B',
+    marginBottom: 4,
+  },
+  txMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  txDate: {
+    fontSize: 12,
+    color: '#94A3B8',
+  },
+  multiplierTag: {
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  multiplierText: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: '#D97706',
+  },
+  txCoins: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginLeft: 8,
+  },
+  txDivider: {
+    height: 1,
+    backgroundColor: '#F1F5F9',
+    marginLeft: 66,
   },
   optionsGrid: {
     gap: 12,
@@ -471,7 +660,6 @@ const styles = StyleSheet.create({
   badgeText: {
     fontSize: 10,
     fontWeight: 'bold',
-    fontFamily: 'Poppins-Regular',
     color: '#FFFFFF',
   },
   optionIconContainer: {
@@ -485,13 +673,11 @@ const styles = StyleSheet.create({
   optionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    fontFamily: 'Poppins-Regular',
     color: '#0F172A',
     marginBottom: 6,
   },
   optionDescription: {
     fontSize: 13,
-    fontFamily: 'Poppins-Regular',
     color: '#64748B',
     marginBottom: 12,
   },
@@ -527,7 +713,6 @@ const styles = StyleSheet.create({
   earnText: {
     flex: 1,
     fontSize: 15,
-    fontFamily: 'Poppins-Regular',
     color: '#0F172A',
     fontWeight: '500',
   },
@@ -540,55 +725,11 @@ const styles = StyleSheet.create({
   earnCoinsText: {
     fontSize: 14,
     fontWeight: 'bold',
-    fontFamily: 'Poppins-Regular',
     color: '#16A34A',
   },
   earnDivider: {
     height: 1,
     backgroundColor: '#F1F5F9',
-  },
-  learnCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    overflow: 'hidden',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-  },
-  learnItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-  },
-  learnIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  learnTextContainer: {
-    flex: 1,
-  },
-  learnTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    fontFamily: 'Poppins-Regular',
-    color: '#0F172A',
-    marginBottom: 4,
-  },
-  learnDescription: {
-    fontSize: 13,
-    fontFamily: 'Poppins-Regular',
-    color: '#64748B',
-  },
-  learnDivider: {
-    height: 1,
-    backgroundColor: '#F1F5F9',
-    marginLeft: 76,
   },
   infoBanner: {
     flexDirection: 'row',

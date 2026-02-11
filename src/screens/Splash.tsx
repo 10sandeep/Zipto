@@ -1,23 +1,26 @@
 import React, { useEffect } from 'react';
-import {
-  View,
-  StyleSheet,
-  Image,
-} from 'react-native';
+import { View, StyleSheet, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
+import { useAuthStore } from '../store/useAuthStore';
 
 const Splash = () => {
   const navigation = useNavigation<any>();
+  const { isAuthenticated, token } = useAuthStore();
 
   useEffect(() => {
+    // Check if user is already authenticated and log token
+    if (isAuthenticated && token) {
+      console.log('👤 Already authenticated! Bearer Token:', token);
+    }
+
     // Simple timeout instead of complex animations
     const timer = setTimeout(() => {
       navigation.replace('LanguageSelection');
     }, 2500); // 2.5 seconds
 
     return () => clearTimeout(timer);
-  }, [navigation]);
+  }, [navigation, isAuthenticated, token]);
 
   return (
     <View style={styles.container}>

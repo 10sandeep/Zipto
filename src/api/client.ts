@@ -13,6 +13,16 @@ const client = axios.create({
 // Flag to prevent multiple simultaneous refresh attempts
 let isRefreshing = false;
 let failedQueue: any[] = [];
+let logoutCallback: (() => void) | null = null;
+let tokenUpdateCallback: ((token: string, refreshToken: string) => void) | null = null;
+
+export const setLogoutCallback = (callback: () => void) => {
+  logoutCallback = callback;
+};
+
+export const setTokenUpdateCallback = (callback: (token: string, refreshToken: string) => void) => {
+  tokenUpdateCallback = callback;
+};
 
 const processQueue = (error: any, token: string | null = null) => {
   failedQueue.forEach(prom => {
@@ -44,8 +54,12 @@ client.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
+    console.log('🔴 API Error:', error.response?.status, error.response?.data?.message || error.message);
+
     // If error is 401 and we haven't already tried to refresh
     if (error.response?.status === 401 && !originalRequest._retry) {
+      console.log('🔄 Token expired, attempting refresh...');
+      
       if (isRefreshing) {
         // If already refreshing, queue this request
         return new Promise((resolve, reject) => {
@@ -65,9 +79,12 @@ client.interceptors.response.use(
         const refreshToken = await AsyncStorage.getItem('refresh_token');
         
         if (!refreshToken) {
+          console.log('❌ No refresh token available');
           throw new Error('No refresh token available');
         }
 
+        console.log('🔄 Calling refresh token API...');
+        
         // Call refresh token endpoint
         const response = await axios.post(`${API_URL}/auth/refresh-token`, {
           refresh_token: refreshToken,
@@ -75,6 +92,9 @@ client.interceptors.response.use(
 
         if (response.data.success && response.data.data) {
           const { access_token, refresh_token: newRefreshToken } = response.data.data;
+
+          console.log('✅ Token refreshed successfully!');
+          console.log('🔑 New Bearer Token:', access_token);
 
           // Update tokens in AsyncStorage
           await AsyncStorage.setItem('auth_token', access_token);
@@ -84,6 +104,12 @@ client.interceptors.response.use(
           client.defaults.headers.common.Authorization = `Bearer ${access_token}`;
           originalRequest.headers.Authorization = `Bearer ${access_token}`;
 
+          // Trigger token update callback
+          if (tokenUpdateCallback) {
+            console.log('🔄 Triggering token update callback...');
+            tokenUpdateCallback(access_token, newRefreshToken);
+          }
+
           processQueue(null, access_token);
           isRefreshing = false;
 
@@ -92,13 +118,20 @@ client.interceptors.response.use(
         } else {
           throw new Error('Token refresh failed');
         }
-      } catch (refreshError) {
+      } catch (refreshError: any) {
+        console.log('❌ Token refresh failed:', refreshError.message);
         processQueue(refreshError, null);
         isRefreshing = false;
 
         // Clear tokens and logout user
         await AsyncStorage.removeItem('auth_token');
         await AsyncStorage.removeItem('refresh_token');
+        
+        // Trigger store logout if callback is registered
+        if (logoutCallback) {
+          console.log('🔄 Triggering store logout callback...');
+          logoutCallback();
+        }
 
         return Promise.reject(refreshError);
       }

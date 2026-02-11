@@ -88,8 +88,8 @@ const OTPVerification = () => {
   }, []);
 
   const handleVerify = async () => {
-    if (otp.length !== 4) {
-      setError('Please enter 4-digit OTP');
+    if (otp.length !== 6) {
+      setError('Please enter 6-digit OTP');
       return;
     }
 
@@ -161,7 +161,7 @@ const OTPVerification = () => {
               <View style={styles.formSection}>
                 <Text style={styles.title}>Verify OTP</Text>
                 <Text style={styles.subtitle}>
-                  We've sent a 4-digit code to {'\n'}+91 {mobile}
+                  We've sent a 6-digit code to {'\n'}+91 {mobile}
                 </Text>
 
                 {/* OTP Input */}
@@ -176,10 +176,10 @@ const OTPVerification = () => {
                     <Text style={styles.otpIcon}>🔒</Text>
                     <TextInput
                       style={styles.otpInput}
-                      placeholder="0000"
+                      placeholder="000000"
                       placeholderTextColor="#6B7280"
                       keyboardType="number-pad"
-                      maxLength={4}
+                      maxLength={6}
                       value={otp}
                       onChangeText={text => {
                         setOtp(text);
@@ -346,10 +346,10 @@ const styles = StyleSheet.create({
   },
   otpInput: {
     flex: 1,
-    fontSize: 24,
+    fontSize: 22,
     color: '#0F172A',
     paddingVertical: 16,
-    letterSpacing: 12,
+    letterSpacing: 8,
     textAlign: 'center',
   },
 

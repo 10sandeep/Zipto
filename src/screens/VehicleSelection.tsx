@@ -41,7 +41,7 @@ const VehicleSelection = () => {
   const [error, setError] = useState<string | null>(null);
 
   // Get data from route params
-  const { pickup, drop, pickupCoords, dropCoords } = route.params || {};
+  const { pickup, drop, pickupCoords, dropCoords, city, serviceCategory, senderName, senderMobile } = route.params || {};
 
   // Animated values
   const fadeAnim = useRef(new Animated.Value(1)).current;
@@ -96,6 +96,10 @@ const VehicleSelection = () => {
         dropCoords,
         withHelper,
         helperCost,
+        city,
+        serviceCategory,
+        senderName,
+        senderMobile,
       });
     }
   };

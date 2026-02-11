@@ -12,7 +12,7 @@ import {
   ScrollView,
   Animated,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Geolocation from '@react-native-community/geolocation';
 import { mapboxApi } from '../api/mapbox';
@@ -50,6 +50,8 @@ const LOCATION_TYPES: LocationType[] = ['Home', 'Shop', 'Office', 'Other'];
 
 const PickupDropSelection = () => {
   const navigation = useNavigation<any>();
+  const route = useRoute<any>();
+  const serviceCategory = route.params?.serviceCategory || 'send_packages';
   const [pickup, setPickup] = useState('');
   const [drop, setDrop] = useState('');
   const [activeInput, setActiveInput] = useState<'pickup' | 'drop'>('pickup');
@@ -111,61 +113,58 @@ const PickupDropSelection = () => {
 
   const getCurrentLocation = () => {
     setIsLoadingLocation(true);
+    console.log('📍 Requesting location...');
 
-    const fetchLocation = (highAccuracy = true) => {
-      Geolocation.getCurrentPosition(
-        async position => {
-          const { latitude, longitude } = position.coords;
-          setCurrentLocationCoords({ latitude, longitude });
+    // Use low accuracy first - it's faster and more reliable
+    Geolocation.getCurrentPosition(
+      async position => {
+        const { latitude, longitude } = position.coords;
+        console.log('📍 Location obtained:', { latitude, longitude });
+        setCurrentLocationCoords({ latitude, longitude });
 
-          try {
-            const address = await mapboxApi.reverseGeocode(latitude, longitude);
+        try {
+          const address = await mapboxApi.reverseGeocode(latitude, longitude);
 
-            if (address) {
-              if (activeInput === 'pickup') {
-                setPickup(address);
-              } else {
-                setDrop(address);
-              }
-
-              const detectedCity = CITIES.find(city =>
-                address.toLowerCase().includes(city.toLowerCase()),
-              );
-
-              if (detectedCity && !selectedCity) {
-                setSelectedCity(detectedCity);
-              }
+          if (address) {
+            if (activeInput === 'pickup') {
+              setPickup(address);
+              setPickupCoords({ latitude, longitude });
+            } else {
+              setDrop(address);
+              setDropCoords({ latitude, longitude });
             }
-          } catch (error) {
-            console.error('Reverse geocoding error:', error);
-            Alert.alert('Error', 'Could not get your current location address');
-          } finally {
-            setIsLoadingLocation(false);
-          }
-        },
-        err => {
-          if (highAccuracy) {
-            console.log('High accuracy failed, trying low accuracy...');
-            fetchLocation(false); // Retry with low accuracy
-            return;
-          }
 
-          console.error('Geolocation error:', err);
-          Alert.alert(
-            'Location Error',
-            'Could not fetch location. Ensure GPS is on.',
-          );
+            const detectedCity = CITIES.find(city =>
+              address.toLowerCase().includes(city.toLowerCase()),
+            );
+
+            if (detectedCity && !selectedCity) {
+              setSelectedCity(detectedCity);
+            }
+          }
+        } catch (error) {
+          console.error('Reverse geocoding error:', error);
+          Alert.alert('Error', 'Could not get your current location address');
+        } finally {
           setIsLoadingLocation(false);
-        },
-        {
-          enableHighAccuracy: highAccuracy,
-          timeout: highAccuracy ? 15000 : 30000,
-          maximumAge: 10000,
-        },
-      );
-    };
-
-    fetchLocation(true);
+        }
+      },
+      err => {
+        console.log('Location error:', err);
+        Alert.alert(
+          'Location Error',
+          err.code === 1
+            ? 'Location permission denied. Please enable location access.'
+            : 'Could not fetch location. Please try again.',
+        );
+        setIsLoadingLocation(false);
+      },
+      {
+        enableHighAccuracy: false,
+        timeout: 10000,
+        maximumAge: 60000,
+      },
+    );
   };
 
   const handleCitySelect = (city: CityName) => {
@@ -204,6 +203,11 @@ const PickupDropSelection = () => {
         latitude: fullLocationData.center[1], // Mapbox format is [lng, lat]
         longitude: fullLocationData.center[0],
       };
+
+      console.log(
+        `📍 ${activeInput === 'pickup' ? 'Pickup' : 'Drop'} Selected:`,
+        coordinates,
+      );
 
       if (activeInput === 'pickup') {
         setPickup(fullAddress);
@@ -342,6 +346,8 @@ const PickupDropSelection = () => {
         currentLocationCoords,
         senderName,
         senderMobile,
+        city: selectedCity,
+        serviceCategory,
         locationType:
           selectedLocationType === 'Other'
             ? customLocationName

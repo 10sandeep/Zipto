@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   StyleSheet,
@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -18,6 +19,7 @@ import BottomTabBar from './BottomTabBar';
 const Profile = () => {
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
   const { user, logout } = useAuthStore();
+  const [loggingOut, setLoggingOut] = useState(false);
 
   const handleLogout = () => {
     Alert.alert('Logout', 'Are you sure you want to logout?', [
@@ -25,8 +27,16 @@ const Profile = () => {
       {
         text: 'Logout',
         style: 'destructive',
-        onPress: () => {
-          logout();
+        onPress: async () => {
+          try {
+            setLoggingOut(true);
+            await logout();
+            // RootNavigator automatically switches to AuthNavigator
+            // when isAuthenticated becomes false
+          } catch (err) {
+            console.error('Logout error:', err);
+            setLoggingOut(false);
+          }
         },
       },
     ]);
@@ -218,12 +228,19 @@ const Profile = () => {
           {/* Logout Button */}
           <View style={styles.logoutSection}>
             <TouchableOpacity
-              style={styles.logoutButton}
+              style={[styles.logoutButton, loggingOut && styles.logoutButtonDisabled]}
               onPress={handleLogout}
               activeOpacity={0.8}
+              disabled={loggingOut}
             >
-              <MaterialIcons name="logout" size={22} color="#EF4444" />
-              <Text style={styles.logoutText}>Logout</Text>
+              {loggingOut ? (
+                <ActivityIndicator size="small" color="#EF4444" />
+              ) : (
+                <MaterialIcons name="logout" size={22} color="#EF4444" />
+              )}
+              <Text style={styles.logoutText}>
+                {loggingOut ? 'Logging out...' : 'Logout'}
+              </Text>
             </TouchableOpacity>
           </View>
 
@@ -436,6 +453,9 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 2,
+  },
+  logoutButtonDisabled: {
+    opacity: 0.6,
   },
   logoutText: {
     fontSize: 16,

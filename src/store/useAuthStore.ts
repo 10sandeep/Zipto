@@ -81,6 +81,9 @@ export const useAuthStore = create<AuthState>()(
             await AsyncStorage.setItem('auth_token', access_token);
             await AsyncStorage.setItem('refresh_token', refresh_token);
 
+            // Log the bearer token
+            console.log('✅ Authentication successful! Bearer Token:', access_token);
+
             set({
               user,
               token: access_token,
@@ -103,22 +106,45 @@ export const useAuthStore = create<AuthState>()(
       },
 
       fetchProfile: async () => {
+        console.log('🔄 fetchProfile called');
         try {
           const response = await authApi.getCustomerProfile();
+          console.log('✅ fetchProfile response:', JSON.stringify(response, null, 2));
 
-          if (response.success && response.data) {
+          // Safe check for response existance
+          if (response?.success && response?.data) {
             const { user, ...profileData } = response.data;
 
             set({
               user,
               profile: profileData,
             });
+          } else {
+            console.log('⚠️ Fetch profile returned invalid response:', response);
           }
         } catch (error: any) {
-          console.error('Fetch profile error:', error);
-          // If token is invalid (401), logout the user
-          if (error.response?.status === 401) {
+          console.error('❌ Fetch profile error CAUGHT:', error);
+          console.log('🔍 Error structure:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+          console.log('🔍 Error response data:', JSON.stringify(error.response?.data, null, 2));
+          
+          console.log('🔒 Error details:', {
+            status: error.response?.status,
+            dataStatus: error.response?.data?.statusCode,
+            message: error.message
+          });
+          
+          // Check for various forms of 401 Unauthorized
+          const isUnauthorized = 
+            error.response?.status === 401 || 
+            error.response?.data?.statusCode === 401 ||
+            (error.message && error.message.includes('401'));
+          
+          console.log('🕵️ isUnauthorized check result:', isUnauthorized);
+
+          if (isUnauthorized) {
+            console.log('🔒 401 Unauthorized detected in fetchProfile, logging out...');
             await AsyncStorage.removeItem('auth_token');
+            await AsyncStorage.removeItem('refresh_token');
             set({
               user: null,
               profile: null,
@@ -126,6 +152,7 @@ export const useAuthStore = create<AuthState>()(
               refreshToken: null,
               isAuthenticated: false,
             });
+            console.log('👋 Logout complete, state reset.');
           }
         }
       },
@@ -146,6 +173,9 @@ export const useAuthStore = create<AuthState>()(
             // Update AsyncStorage
             await AsyncStorage.setItem('auth_token', access_token);
             await AsyncStorage.setItem('refresh_token', refresh_token);
+
+            // Log the refreshed bearer token
+            console.log('🔄 Token refreshed! New Bearer Token:', access_token);
 
             // Update state
             set({
@@ -207,3 +237,19 @@ export const useAuthStore = create<AuthState>()(
     }
   )
 );
+
+// Register the independent logout function to avoid circular dependencies
+// This allows axios interceptors to trigger store logout even though client.ts doesn't import useAuthStore
+import { setLogoutCallback, setTokenUpdateCallback } from '../api/client';
+
+setLogoutCallback(() => {
+  useAuthStore.getState().logout().catch(console.error);
+});
+
+setTokenUpdateCallback((token, refreshToken) => {
+  console.log('🔄 Sychronizing refreshed token to Zustand store');
+  useAuthStore.setState({ 
+    token, 
+    refreshToken 
+  });
+});

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   StyleSheet,
@@ -6,55 +6,142 @@ import {
   TouchableOpacity,
   ScrollView,
   TextInput,
+  Alert,
+  ActivityIndicator,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AppStackParamList } from '../navigation/AppNavigator';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import LinearGradient from 'react-native-linear-gradient';
+import { vehicleApi } from '../api/vehicle';
 
 const TransferToWalletScreen = () => {
   const navigation =
     useNavigation<NativeStackNavigationProp<AppStackParamList>>();
-  const route = useRoute();
-  const availableCoins = 850; // You can get this from route.params if passed
 
-  const [transferAmount, setTransferAmount] = useState('');
-  const [showBankForm, setShowBankForm] = useState(false);
-  const [bankDetails, setBankDetails] = useState({
-    accountNumber: '',
-    confirmAccountNumber: '',
-    ifsc: '',
-    accountHolderName: '',
-  });
+  const [availableCoins, setAvailableCoins] = useState(0);
+  const [rupeeValue, setRupeeValue] = useState(0);
+  const [rate, setRate] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [transferring, setTransferring] = useState(false);
+  const [coinsToTransfer, setCoinsToTransfer] = useState('');
+  const [successModal, setSuccessModal] = useState<{
+    coins: number;
+    rupees: number;
+    remaining: number;
+  } | null>(null);
 
-  const maxTransferAmount = Math.floor(availableCoins / 10);
+  // Parse rate to get coins per rupee (e.g. "100 coins = ₹2" → 50 coins per rupee)
+  const coinsPerRupee = rate
+    ? (() => {
+        const match = rate.match(/(\d+)\s*coins?\s*=\s*₹(\d+)/i);
+        if (match) return parseInt(match[1]) / parseInt(match[2]);
+        return 50; // fallback
+      })()
+    : 50;
 
-  const handleQuickAmount = (amount: number) => {
-    if (amount <= maxTransferAmount) {
-      setTransferAmount(amount.toString());
+  const coinsNum = parseInt(coinsToTransfer) || 0;
+  const rupeeEquivalent = coinsNum / coinsPerRupee;
+
+  const fetchBalance = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await vehicleApi.getCoinsBalance();
+      setAvailableCoins(res.coins ?? 0);
+      setRupeeValue(res.rupee_value ?? 0);
+      setRate(res.rate ?? '');
+    } catch (err) {
+      console.error('Failed to fetch balance:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchBalance();
+  }, [fetchBalance]);
+
+  const handleQuickCoins = (amount: number) => {
+    if (amount <= availableCoins) {
+      setCoinsToTransfer(amount.toString());
     }
   };
 
-  const handleTransfer = () => {
-    // Implement transfer logic
-    console.log('Transfer initiated:', {
-      amount: transferAmount,
-      coins: parseInt(transferAmount) * 10,
-      ...bankDetails,
-    });
+  const handleTransfer = async () => {
+    if (coinsNum <= 0) {
+      Alert.alert('Invalid Amount', 'Please enter a valid number of coins.');
+      return;
+    }
+    if (coinsNum > availableCoins) {
+      Alert.alert('Insufficient Coins', `You only have ${availableCoins} coins available.`);
+      return;
+    }
+    const minCoins = coinsPerRupee; // minimum 1 rupee worth
+    if (coinsNum < minCoins) {
+      Alert.alert('Minimum Transfer', `Minimum transfer is ${minCoins} coins (₹1).`);
+      return;
+    }
+
+    try {
+      setTransferring(true);
+      const res = await vehicleApi.transferToWallet({ coins: coinsNum });
+      if (res.success) {
+        setSuccessModal({
+          coins: res.data?.coins_deducted ?? coinsNum,
+          rupees: res.data?.rupee_value ?? rupeeEquivalent,
+          remaining: res.data?.remaining_coins ?? (availableCoins - coinsNum),
+        });
+        setAvailableCoins(res.data?.remaining_coins ?? (availableCoins - coinsNum));
+        setCoinsToTransfer('');
+      } else {
+        Alert.alert('Transfer Failed', res.message || 'Something went wrong. Please try again.');
+      }
+    } catch (err: any) {
+      Alert.alert(
+        'Transfer Failed',
+        err.response?.data?.message || err.message || 'Something went wrong. Please try again.',
+      );
+    } finally {
+      setTransferring(false);
+    }
   };
+
+  const quickAmounts = [
+    { label: '100', value: 100 },
+    { label: '250', value: 250 },
+    { label: '500', value: 500 },
+    { label: 'All', value: availableCoins },
+  ];
+
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <SafeAreaView style={styles.safeArea} edges={['top']}>
+          <View style={styles.header}>
+            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+              <MaterialIcons name="arrow-back" size={24} color="#0F172A" />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Transfer to Wallet</Text>
+            <View style={{ width: 40 }} />
+          </View>
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#3B82F6" />
+            <Text style={styles.loadingText}>Loading balance...</Text>
+          </View>
+        </SafeAreaView>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={styles.backButton}
-          >
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
             <MaterialIcons name="arrow-back" size={24} color="#0F172A" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Transfer to Wallet</Text>
@@ -78,53 +165,65 @@ const TransferToWalletScreen = () => {
                 <Text style={styles.balanceLabel}>Available Coins</Text>
                 <Text style={styles.balanceAmount}>{availableCoins}</Text>
                 <Text style={styles.balanceSubtext}>
-                  ≈ ₹{maxTransferAmount}
+                  ≈ ₹{(availableCoins / coinsPerRupee).toFixed(2)}
                 </Text>
               </View>
-
               <View style={styles.coinsIconContainer}>
                 <MaterialIcons name="stars" size={60} color="#FCD34D" />
               </View>
             </LinearGradient>
           </View>
 
-          {/* Transfer Amount Section */}
+          {/* Transfer Section */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Enter Transfer Amount</Text>
+            <Text style={styles.sectionTitle}>How many coins to transfer?</Text>
             <View style={styles.inputCard}>
-              <Text style={styles.inputLabel}>Amount (₹)</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter amount"
-                placeholderTextColor="#94A3B8"
-                keyboardType="numeric"
-                value={transferAmount}
-                onChangeText={setTransferAmount}
-              />
-              <Text style={styles.inputHint}>
-                Maximum: ₹{maxTransferAmount} • 10 coins = ₹1
-              </Text>
+              <View style={styles.inputRow}>
+                <MaterialIcons name="stars" size={24} color="#F59E0B" />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter coins"
+                  placeholderTextColor="#94A3B8"
+                  keyboardType="numeric"
+                  value={coinsToTransfer}
+                  onChangeText={setCoinsToTransfer}
+                />
+              </View>
+
+              {coinsNum > 0 && (
+                <View style={styles.conversionRow}>
+                  <MaterialIcons name="swap-vert" size={18} color="#6366F1" />
+                  <Text style={styles.conversionText}>
+                    {coinsNum} coins = ₹{rupeeEquivalent.toFixed(2)}
+                  </Text>
+                </View>
+              )}
+
+              {coinsNum > availableCoins && (
+                <Text style={styles.errorText}>Exceeds available coins</Text>
+              )}
 
               {/* Quick Amount Buttons */}
               <View style={styles.quickAmountContainer}>
-                {[50, 100, 200].map(amount => (
+                {quickAmounts.map(item => (
                   <TouchableOpacity
-                    key={amount}
+                    key={item.label}
                     style={[
                       styles.quickAmountBtn,
-                      transferAmount === amount.toString() &&
-                        styles.quickAmountBtnActive,
+                      coinsToTransfer === item.value.toString() && styles.quickAmountBtnActive,
+                      item.value > availableCoins && styles.quickAmountBtnDisabled,
                     ]}
-                    onPress={() => handleQuickAmount(amount)}
+                    onPress={() => handleQuickCoins(item.value)}
+                    disabled={item.value > availableCoins}
                   >
                     <Text
                       style={[
                         styles.quickAmountText,
-                        transferAmount === amount.toString() &&
-                          styles.quickAmountTextActive,
+                        coinsToTransfer === item.value.toString() && styles.quickAmountTextActive,
+                        item.value > availableCoins && styles.quickAmountTextDisabled,
                       ]}
                     >
-                      ₹{amount}
+                      {item.label}
                     </Text>
                   </TouchableOpacity>
                 ))}
@@ -132,107 +231,96 @@ const TransferToWalletScreen = () => {
             </View>
           </View>
 
-          {/* Bank Details Form */}
-          {!showBankForm ? (
-            <TouchableOpacity
-              style={styles.primaryButton}
-              onPress={() => setShowBankForm(true)}
-            >
-              <MaterialIcons
-                name="account-balance"
-                size={20}
-                color="#FFFFFF"
-              />
-              <Text style={styles.primaryButtonText}>Add Bank Details</Text>
-            </TouchableOpacity>
-          ) : (
+          {/* Transfer Summary */}
+          {coinsNum > 0 && coinsNum <= availableCoins && (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Bank Account Details</Text>
-              <View style={styles.inputCard}>
-                <Text style={styles.inputLabel}>Account Holder Name</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter account holder name"
-                  placeholderTextColor="#94A3B8"
-                  value={bankDetails.accountHolderName}
-                  onChangeText={val =>
-                    setBankDetails({ ...bankDetails, accountHolderName: val })
-                  }
-                />
-
-                <Text style={styles.inputLabel}>Account Number</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter account number"
-                  placeholderTextColor="#94A3B8"
-                  keyboardType="numeric"
-                  value={bankDetails.accountNumber}
-                  onChangeText={val =>
-                    setBankDetails({ ...bankDetails, accountNumber: val })
-                  }
-                />
-
-                <Text style={styles.inputLabel}>Confirm Account Number</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Re-enter account number"
-                  placeholderTextColor="#94A3B8"
-                  keyboardType="numeric"
-                  value={bankDetails.confirmAccountNumber}
-                  onChangeText={val =>
-                    setBankDetails({
-                      ...bankDetails,
-                      confirmAccountNumber: val,
-                    })
-                  }
-                />
-
-                <Text style={styles.inputLabel}>IFSC Code</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter IFSC code"
-                  placeholderTextColor="#94A3B8"
-                  autoCapitalize="characters"
-                  value={bankDetails.ifsc}
-                  onChangeText={val =>
-                    setBankDetails({ ...bankDetails, ifsc: val })
-                  }
-                />
-
-                <TouchableOpacity
-                  style={styles.primaryButton}
-                  onPress={handleTransfer}
-                >
-                  <MaterialIcons
-                    name="account-balance-wallet"
-                    size={20}
-                    color="#FFFFFF"
-                  />
-                  <Text style={styles.primaryButtonText}>
-                    Transfer ₹{transferAmount || '0'}
-                  </Text>
-                </TouchableOpacity>
+              <Text style={styles.sectionTitle}>Transfer Summary</Text>
+              <View style={styles.summaryCard}>
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>Coins to transfer</Text>
+                  <Text style={styles.summaryValue}>{coinsNum}</Text>
+                </View>
+                <View style={styles.summaryDivider} />
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>Wallet credit</Text>
+                  <Text style={[styles.summaryValue, { color: '#10B981' }]}>₹{rupeeEquivalent.toFixed(2)}</Text>
+                </View>
+                <View style={styles.summaryDivider} />
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>Remaining coins</Text>
+                  <Text style={styles.summaryValue}>{availableCoins - coinsNum}</Text>
+                </View>
               </View>
             </View>
           )}
+
+          {/* Transfer Button */}
+          <TouchableOpacity
+            style={[
+              styles.transferButton,
+              (coinsNum <= 0 || coinsNum > availableCoins || transferring) && styles.transferButtonDisabled,
+            ]}
+            onPress={handleTransfer}
+            disabled={coinsNum <= 0 || coinsNum > availableCoins || transferring}
+            activeOpacity={0.8}
+          >
+            {transferring ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <>
+                <MaterialIcons name="account-balance-wallet" size={22} color="#FFFFFF" />
+                <Text style={styles.transferButtonText}>
+                  Transfer{coinsNum > 0 ? ` ₹${rupeeEquivalent.toFixed(2)}` : ''} to Wallet
+                </Text>
+              </>
+            )}
+          </TouchableOpacity>
 
           {/* Info Banner */}
           <View style={styles.infoBanner}>
             <MaterialIcons name="info" size={20} color="#3B82F6" />
             <View style={styles.infoBannerContent}>
               <Text style={styles.infoBannerText}>
-                • Transfers usually take 2-3 business days
+                • {rate || '50 coins = ₹1'}
               </Text>
               <Text style={styles.infoBannerText}>
-                • Minimum transfer amount: ₹50
+                • Transferred amount is added to your Zipto wallet instantly
               </Text>
               <Text style={styles.infoBannerText}>
-                • No transaction fees applied
+                • Wallet balance can be used for future bookings
               </Text>
             </View>
           </View>
         </ScrollView>
       </SafeAreaView>
+
+      {/* Success Modal */}
+      <Modal visible={!!successModal} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalIcon}>
+              <MaterialIcons name="check-circle" size={64} color="#10B981" />
+            </View>
+            <Text style={styles.modalTitle}>Transfer Successful!</Text>
+            <Text style={styles.modalSubtitle}>
+              {successModal?.coins} coins converted to ₹{successModal?.rupees.toFixed(2)}
+            </Text>
+            <View style={styles.modalInfoRow}>
+              <Text style={styles.modalInfoLabel}>Remaining Coins</Text>
+              <Text style={styles.modalInfoValue}>{successModal?.remaining}</Text>
+            </View>
+            <TouchableOpacity
+              style={styles.modalButton}
+              onPress={() => {
+                setSuccessModal(null);
+                navigation.goBack();
+              }}
+            >
+              <Text style={styles.modalButtonText}>Done</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -266,8 +354,17 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    fontFamily: 'Poppins-Regular',
     color: '#0F172A',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 15,
+    color: '#64748B',
   },
   scrollView: {
     flex: 1,
@@ -283,7 +380,7 @@ const styles = StyleSheet.create({
     padding: 24,
     position: 'relative',
     overflow: 'hidden',
-    minHeight: 160,
+    minHeight: 150,
     elevation: 8,
     shadowColor: '#3B82F6',
     shadowOffset: { width: 0, height: 4 },
@@ -295,20 +392,17 @@ const styles = StyleSheet.create({
   },
   balanceLabel: {
     fontSize: 14,
-    fontFamily: 'Poppins-Regular',
     color: '#DBEAFE',
     marginBottom: 8,
   },
   balanceAmount: {
-    fontSize: 48,
+    fontSize: 44,
     fontWeight: 'bold',
-    fontFamily: 'Poppins-Regular',
     color: '#FFFFFF',
     marginBottom: 4,
   },
   balanceSubtext: {
     fontSize: 16,
-    fontFamily: 'Poppins-Regular',
     color: '#DBEAFE',
   },
   coinsIconContainer: {
@@ -319,14 +413,13 @@ const styles = StyleSheet.create({
   },
   section: {
     paddingHorizontal: 16,
-    marginBottom: 24,
+    marginBottom: 20,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: 'bold',
-    fontFamily: 'Poppins-Regular',
     color: '#0F172A',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   inputCard: {
     backgroundColor: '#FFFFFF',
@@ -338,29 +431,39 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 2,
   },
-  inputLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    fontFamily: 'Poppins-Regular',
-    color: '#0F172A',
-    marginBottom: 8,
-    marginTop: 12,
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    backgroundColor: '#F8FAFC',
   },
   input: {
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    fontFamily: 'Poppins-Regular',
-    backgroundColor: '#F8FAFC',
+    flex: 1,
+    fontSize: 18,
+    fontWeight: '600',
     color: '#0F172A',
+    paddingVertical: 14,
+    marginLeft: 10,
   },
-  inputHint: {
-    fontSize: 12,
-    fontFamily: 'Poppins-Regular',
-    color: '#64748B',
+  conversionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 10,
+    gap: 6,
+  },
+  conversionText: {
+    fontSize: 14,
+    color: '#6366F1',
+    fontWeight: '600',
+  },
+  errorText: {
+    fontSize: 13,
+    color: '#EF4444',
     marginTop: 6,
+    fontWeight: '500',
   },
   quickAmountContainer: {
     flexDirection: 'row',
@@ -369,48 +472,87 @@ const styles = StyleSheet.create({
   },
   quickAmountBtn: {
     flex: 1,
-    padding: 12,
+    padding: 10,
     backgroundColor: '#EFF6FF',
-    borderRadius: 8,
+    borderRadius: 10,
     alignItems: 'center',
-    borderWidth: 2,
+    borderWidth: 1.5,
     borderColor: 'transparent',
   },
   quickAmountBtnActive: {
     backgroundColor: '#DBEAFE',
     borderColor: '#3B82F6',
   },
+  quickAmountBtnDisabled: {
+    backgroundColor: '#F1F5F9',
+    opacity: 0.5,
+  },
   quickAmountText: {
     color: '#3B82F6',
     fontWeight: '600',
-    fontFamily: 'Poppins-Regular',
-    fontSize: 15,
+    fontSize: 14,
   },
   quickAmountTextActive: {
     color: '#1D4ED8',
     fontWeight: 'bold',
   },
-  primaryButton: {
+  quickAmountTextDisabled: {
+    color: '#94A3B8',
+  },
+  summaryCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 10,
+  },
+  summaryLabel: {
+    fontSize: 14,
+    color: '#64748B',
+  },
+  summaryValue: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  summaryDivider: {
+    height: 1,
+    backgroundColor: '#F1F5F9',
+  },
+  transferButton: {
     flexDirection: 'row',
     backgroundColor: '#3B82F6',
     padding: 16,
-    borderRadius: 12,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
     marginHorizontal: 16,
-    marginTop: 8,
-    gap: 8,
+    marginBottom: 20,
+    gap: 10,
     elevation: 4,
     shadowColor: '#3B82F6',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
   },
-  primaryButtonText: {
+  transferButtonDisabled: {
+    backgroundColor: '#94A3B8',
+    elevation: 0,
+    shadowOpacity: 0,
+  },
+  transferButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: 'bold',
-    fontFamily: 'Poppins-Regular',
   },
   infoBanner: {
     flexDirection: 'row',
@@ -428,10 +570,68 @@ const styles = StyleSheet.create({
   },
   infoBannerText: {
     fontSize: 13,
-    fontFamily: 'Poppins-Regular',
     color: '#1E40AF',
     lineHeight: 20,
-    marginBottom: 4,
+    marginBottom: 2,
+  },
+  // Success Modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  modalContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 32,
+    width: '100%',
+    alignItems: 'center',
+  },
+  modalIcon: {
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#0F172A',
+    marginBottom: 8,
+  },
+  modalSubtitle: {
+    fontSize: 15,
+    color: '#64748B',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  modalInfoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    backgroundColor: '#F8FAFC',
+    padding: 14,
+    borderRadius: 10,
+    marginBottom: 20,
+  },
+  modalInfoLabel: {
+    fontSize: 14,
+    color: '#64748B',
+  },
+  modalInfoValue: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#0F172A',
+  },
+  modalButton: {
+    backgroundColor: '#3B82F6',
+    paddingVertical: 14,
+    paddingHorizontal: 48,
+    borderRadius: 12,
+  },
+  modalButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
 

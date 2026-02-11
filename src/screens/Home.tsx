@@ -18,6 +18,7 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Geolocation from '@react-native-community/geolocation';
 import BottomTabBar from './BottomTabBar';
 import Spinner from '../components/Spinner';
+import { useAuthStore } from '../store/useAuthStore';
 
 const { width, height } = Dimensions.get('window');
 
@@ -36,11 +37,21 @@ const Home = () => {
   );
   const [isMapLoading, setIsMapLoading] = useState(true);
   const [isServicesVisible, setIsServicesVisible] = useState(true);
-  const [locationPermissionGranted, setLocationPermissionGranted] =
+  const [_locationPermissionGranted, setLocationPermissionGranted] =
     useState(false);
+
+  // Get auth token from store
+  const { token, isAuthenticated } = useAuthStore();
 
   // Default center (Bhubaneswar)
   const defaultCenter: [number, number] = [85.8245, 20.2961];
+
+  // Log token on home screen
+  useEffect(() => {
+    if (isAuthenticated && token) {
+      console.log('🏠 Home Screen - Bearer Token:', token);
+    }
+  }, [isAuthenticated, token]);
 
   useEffect(() => {
     const requestLocationPermission = async () => {
@@ -76,9 +87,13 @@ const Home = () => {
   }, []);
 
   const startLocationTracking = () => {
+    console.log('📍 Starting location tracking...');
+
+    // Use low accuracy first - it's faster and more reliable
     Geolocation.getCurrentPosition(
       position => {
         const { latitude, longitude } = position.coords;
+        console.log('📍 Location obtained:', { latitude, longitude });
         const newLocation: [number, number] = [longitude, latitude];
         setUserLocation(newLocation);
 
@@ -92,9 +107,14 @@ const Home = () => {
         }
       },
       error => {
-        console.log('Error getting location:', error);
+        console.log('Location error:', error);
+        // Silently fail - map will show default location
       },
-      { enableHighAccuracy: true, timeout: 30000, maximumAge: 10000 },
+      {
+        enableHighAccuracy: false,
+        timeout: 10000,
+        maximumAge: 60000,
+      },
     );
 
     const watchId = Geolocation.watchPosition(
@@ -103,7 +123,7 @@ const Home = () => {
         setUserLocation([longitude, latitude]);
       },
       error => console.log('Error watching location:', error),
-      { enableHighAccuracy: true, distanceFilter: 10 },
+      { enableHighAccuracy: false, distanceFilter: 10 },
     );
 
     return () => Geolocation.clearWatch(watchId);
@@ -128,6 +148,7 @@ const Home = () => {
       icon: 'local-shipping',
       gradient: ['#3B82F6', '#2563EB'],
       description: 'Quick delivery',
+      serviceCategory: 'send_packages',
     },
     {
       id: 2,
@@ -135,6 +156,7 @@ const Home = () => {
       icon: 'fire-truck',
       gradient: ['#10B981', '#059669'],
       description: 'Heavy items',
+      serviceCategory: 'transport_goods',
     },
     {
       id: 3,
@@ -142,6 +164,7 @@ const Home = () => {
       icon: 'restaurant',
       gradient: ['#F59E0B', '#D97706'],
       description: 'Hot & fresh',
+      serviceCategory: 'food_delivery',
     },
     {
       id: 4,
@@ -149,6 +172,7 @@ const Home = () => {
       icon: 'local-pharmacy',
       gradient: ['#EF4444', '#DC2626'],
       description: 'Emergency delivery',
+      serviceCategory: 'medicine',
     },
   ];
 
@@ -227,7 +251,7 @@ const Home = () => {
                   <TouchableOpacity
                     key={service.id}
                     style={styles.serviceCard}
-                    onPress={() => navigation.navigate('PickupDropSelection')}
+                    onPress={() => navigation.navigate('PickupDropSelection', { serviceCategory: service.serviceCategory })}
                     activeOpacity={0.8}
                   >
                     <View
