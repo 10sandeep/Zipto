@@ -73,6 +73,7 @@ const MyOrders = () => {
       if (!isRefresh) setLoading(true);
       setError(null);
       const response = await vehicleApi.getCustomerHistory();
+      console.log(response);
       if (response.success && response.data?.bookings) {
         setBookings(response.data.bookings);
       } else {
@@ -174,6 +175,18 @@ const MyOrders = () => {
 
   const getPickupAddress = (booking: BookingDetails) => booking.pickup_address || 'Pickup location';
   const getDropAddress = (booking: BookingDetails) => booking.drop_address || 'Drop location';
+  const getServiceCategoryLabel = (booking: BookingDetails) => {
+    const raw = (booking.service_category || '').toString().trim();
+    if (!raw) {
+      return booking.vehicle_type || booking.booking_type || 'Delivery';
+    }
+
+    return raw
+      .split('_')
+      .filter(Boolean)
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
 
   const isActiveBooking = (booking: BookingDetails) =>
     ACTIVE_STATUSES.includes(booking.status?.toLowerCase());
@@ -357,7 +370,7 @@ const MyOrders = () => {
               <MaterialIcons name="local-shipping" size={24} color={statusColor} />
             </View>
             <View style={styles.orderHeaderText}>
-              <Text style={styles.orderType}>{booking.vehicle_type || booking.booking_type || 'Delivery'}</Text>
+              <Text style={styles.orderType}>{getServiceCategoryLabel(booking)}</Text>
               <Text style={styles.orderId}>#{booking.id?.slice(0, 8)}</Text>
             </View>
           </View>

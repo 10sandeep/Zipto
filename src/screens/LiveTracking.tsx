@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   View,
   StyleSheet,
@@ -8,6 +8,11 @@ import {
   ActivityIndicator,
   Linking,
   Alert,
+  Modal,
+  Animated,
+  Easing,
+  Vibration,
+  TextInput,
 } from 'react-native';
 import Mapbox from '@rnmapbox/maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -31,6 +36,14 @@ interface DriverInfo {
   rating?: number;
 }
 
+const CANCEL_REASONS = [
+  'Changed my mind',
+  'Found a better price',
+  'Driver taking too long',
+  'Wrong pickup/drop location',
+  'Booked by mistake',
+];
+
 const LiveTracking = () => {
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
@@ -44,6 +57,8 @@ const LiveTracking = () => {
     dropCoords,
     vehicleType = 'bike',
     fare = 0,
+    showBookingSuccess = false,
+    paymentMethod = 'cash',
   } = route.params || {};
 
   const [bookingStatus, setBookingStatus] = useState<BookingStatus>('searching');
@@ -51,15 +66,155 @@ const LiveTracking = () => {
   const [otp, setOtp] = useState<string | null>(null);
   const [mapReady, setMapReady] = useState(false);
   const [routeCoordinates, setRouteCoordinates] = useState<[number, number][] | null>(null);
+  const [successModal, setSuccessModal] = useState(false);
+  const [cancelModalVisible, setCancelModalVisible] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
+  const [customCancelReason, setCustomCancelReason] = useState('');
+  const [cancelling, setCancelling] = useState(false);
+  const hasShownSuccessRef = useRef(false);
+  const successScale = useRef(new Animated.Value(0)).current;
+  const successOpacity = useRef(new Animated.Value(0)).current;
+  const checkScale = useRef(new Animated.Value(0)).current;
+  const confettiAnims = useRef(
+    Array.from({ length: 12 }, () => ({
+      translateY: new Animated.Value(0),
+      translateX: new Animated.Value(0),
+      opacity: new Animated.Value(0),
+      scale: new Animated.Value(0),
+      rotate: new Animated.Value(0),
+    })),
+  ).current;
+  const confettiColors = ['#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6', '#EC4899', '#06B6D4', '#F97316', '#22C55E', '#EAB308', '#14B8A6', '#A855F7'];
+
+  useEffect(() => {
+    const fallback = setTimeout(() => {
+      setMapReady(true);
+    }, 6000);
+    return () => clearTimeout(fallback);
+  }, []);
+
+  useEffect(() => {
+    if (!showBookingSuccess || hasShownSuccessRef.current) {
+      return;
+    }
+    hasShownSuccessRef.current = true;
+
+    setSuccessModal(true);
+    successScale.setValue(0);
+    successOpacity.setValue(0);
+    checkScale.setValue(0);
+    confettiAnims.forEach(anim => {
+      anim.translateY.setValue(0);
+      anim.translateX.setValue(0);
+      anim.opacity.setValue(0);
+      anim.scale.setValue(0);
+      anim.rotate.setValue(0);
+    });
+
+    Vibration.vibrate([0, 80, 60, 120]);
+
+    Animated.sequence([
+      Animated.parallel([
+        Animated.spring(successScale, {
+          toValue: 1,
+          friction: 6,
+          tension: 42,
+          useNativeDriver: true,
+        }),
+        Animated.timing(successOpacity, {
+          toValue: 1,
+          duration: 260,
+          useNativeDriver: true,
+        }),
+      ]),
+      Animated.spring(checkScale, {
+        toValue: 1,
+        friction: 5,
+        tension: 80,
+        useNativeDriver: true,
+      }),
+      Animated.parallel(
+        confettiAnims.map((anim, i) => {
+          const angle = (i / confettiAnims.length) * 2 * Math.PI;
+          const radius = 90 + Math.random() * 40;
+          return Animated.parallel([
+            Animated.timing(anim.opacity, {
+              toValue: 1,
+              duration: 220,
+              useNativeDriver: true,
+            }),
+            Animated.timing(anim.scale, {
+              toValue: 1,
+              duration: 220,
+              useNativeDriver: true,
+            }),
+            Animated.timing(anim.rotate, {
+              toValue: 1,
+              duration: 700,
+              easing: Easing.out(Easing.cubic),
+              useNativeDriver: true,
+            }),
+            Animated.timing(anim.translateX, {
+              toValue: Math.cos(angle) * radius,
+              duration: 760,
+              easing: Easing.out(Easing.cubic),
+              useNativeDriver: true,
+            }),
+            Animated.sequence([
+              Animated.timing(anim.translateY, {
+                toValue: Math.sin(angle) * radius - 35,
+                duration: 420,
+                easing: Easing.out(Easing.cubic),
+                useNativeDriver: true,
+              }),
+              Animated.timing(anim.translateY, {
+                toValue: Math.sin(angle) * radius + 80,
+                duration: 460,
+                easing: Easing.in(Easing.quad),
+                useNativeDriver: true,
+              }),
+            ]),
+          ]);
+        }),
+      ),
+    ]).start();
+
+    const hideTimer = setTimeout(() => {
+      Animated.parallel([
+        Animated.timing(successOpacity, {
+          toValue: 0,
+          duration: 260,
+          useNativeDriver: true,
+        }),
+        Animated.timing(successScale, {
+          toValue: 0.9,
+          duration: 260,
+          useNativeDriver: true,
+        }),
+      ]).start(() => setSuccessModal(false));
+    }, 2700);
+
+    return () => {
+      clearTimeout(hideTimer);
+    };
+  }, [showBookingSuccess, confettiAnims, checkScale, successOpacity, successScale]);
 
   // MapBox coordinates [lng, lat]
-  const pickupCenter: [number, number] = pickupCoords
-    ? [pickupCoords.longitude, pickupCoords.latitude]
-    : [85.8245, 20.2961];
+  const pickupCenter: [number, number] = useMemo(
+    () =>
+      pickupCoords
+        ? [pickupCoords.longitude, pickupCoords.latitude]
+        : [85.8245, 20.2961],
+    [pickupCoords],
+  );
 
-  const dropCenter: [number, number] = dropCoords
-    ? [dropCoords.longitude, dropCoords.latitude]
-    : [85.8345, 20.3061];
+  const dropCenter: [number, number] = useMemo(
+    () =>
+      dropCoords
+        ? [dropCoords.longitude, dropCoords.latitude]
+        : [85.8345, 20.3061],
+    [dropCoords],
+  );
 
   const fetchBookingDetails = useCallback(async () => {
     if (!bookingId) return;
@@ -125,7 +280,7 @@ const LiveTracking = () => {
       }
     };
     fetchRoute();
-  }, [pickupCenter[0], pickupCenter[1], dropCenter[0], dropCenter[1]]);
+  }, [pickupCenter, dropCenter]);
 
   // Fit map to show both markers
   useEffect(() => {
@@ -142,7 +297,7 @@ const LiveTracking = () => {
         1000,
       );
     }
-  }, []);
+  }, [dropCenter, dropCoords, pickupCenter, pickupCoords]);
 
   const handleCall = () => {
     if (driver?.phone) {
@@ -153,23 +308,46 @@ const LiveTracking = () => {
   };
 
   const handleCancel = () => {
-    Alert.alert(
-      'Cancel Booking',
-      'Are you sure you want to cancel this booking?',
-      [
-        { text: 'No', style: 'cancel' },
-        {
-          text: 'Yes, Cancel',
-          style: 'destructive',
-          onPress: () => {
-            navigation.reset({
-              index: 0,
-              routes: [{ name: 'Home' }],
-            });
-          },
-        },
-      ],
-    );
+    if (!bookingId) {
+      Alert.alert('Unable to Cancel', 'Booking ID not found.');
+      return;
+    }
+    setCancelModalVisible(true);
+  };
+
+  const handleConfirmCancel = async () => {
+    if (!bookingId) return;
+    const reason =
+      cancelReason === 'custom' ? customCancelReason.trim() : cancelReason;
+    if (!reason) return;
+
+    try {
+      setCancelling(true);
+      const response = await vehicleApi.cancelBooking(bookingId, reason);
+      setCancelling(false);
+      setCancelModalVisible(false);
+      setCancelReason('');
+      setCustomCancelReason('');
+
+      if (response.success === false) {
+        Alert.alert(
+          'Cancel Failed',
+          response.message || 'Could not cancel booking. Please try again.',
+        );
+        return;
+      }
+
+      setBookingStatus('cancelled');
+      Alert.alert('Booking Cancelled', 'Your booking has been cancelled.');
+    } catch (err: any) {
+      setCancelling(false);
+      Alert.alert(
+        'Cancel Failed',
+        err?.response?.data?.message ||
+          err?.message ||
+          'Could not cancel booking. Please try again.',
+      );
+    }
   };
 
   const getStatusConfig = () => {
@@ -285,6 +463,7 @@ const LiveTracking = () => {
         attributionEnabled={false}
         scaleBarEnabled={false}
         onDidFinishLoadingMap={() => setMapReady(true)}
+        onDidFailLoadingMap={() => setMapReady(true)}
       >
         <Mapbox.Camera
           ref={cameraRef}
@@ -502,6 +681,190 @@ const LiveTracking = () => {
           )}
         </View>
       </SafeAreaView>
+
+      <Modal visible={successModal} transparent animationType="none">
+        <View style={styles.successOverlay}>
+          <Animated.View
+            style={[
+              styles.successContainer,
+              {
+                opacity: successOpacity,
+                transform: [{ scale: successScale }],
+              },
+            ]}
+          >
+            {confettiAnims.map((anim, i) => (
+              <Animated.View
+                key={i}
+                style={[
+                  styles.confettiDot,
+                  {
+                    backgroundColor: confettiColors[i % confettiColors.length],
+                    opacity: anim.opacity,
+                    transform: [
+                      { translateX: anim.translateX },
+                      { translateY: anim.translateY },
+                      { scale: anim.scale },
+                      {
+                        rotate: anim.rotate.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: ['0deg', '210deg'],
+                        }),
+                      },
+                    ],
+                  },
+                ]}
+              />
+            ))}
+
+            <Animated.View
+              style={[
+                styles.successCheckCircle,
+                { transform: [{ scale: checkScale }] },
+              ]}
+            >
+              <Icon name="check" size={46} color="#FFFFFF" />
+            </Animated.View>
+
+            <Text style={styles.successTitle}>Booking Created</Text>
+            <Text style={styles.successSubtitle}>
+              {paymentMethod === 'online'
+                ? 'Payment successful. Driver search has started.'
+                : 'Cash payment selected. Driver search has started.'}
+            </Text>
+          </Animated.View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={cancelModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => !cancelling && setCancelModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.cancelModalContainer}>
+            <View style={styles.cancelModalHeader}>
+              <View style={styles.cancelModalIconWrap}>
+                <Icon name="warning" size={28} color="#F59E0B" />
+              </View>
+              <Text style={styles.cancelModalTitle}>Cancel Booking</Text>
+              <Text style={styles.cancelModalSubtitle}>
+                Booking #{bookingId?.slice(0, 8)}
+              </Text>
+            </View>
+
+            <Text style={styles.cancelReasonLabel}>Select a reason:</Text>
+            <View style={styles.reasonList}>
+              {CANCEL_REASONS.map(reason => (
+                <TouchableOpacity
+                  key={reason}
+                  style={[
+                    styles.reasonOption,
+                    cancelReason === reason && styles.reasonOptionSelected,
+                  ]}
+                  onPress={() => setCancelReason(reason)}
+                  activeOpacity={0.7}
+                  disabled={cancelling}
+                >
+                  <View
+                    style={[
+                      styles.reasonRadio,
+                      cancelReason === reason && styles.reasonRadioSelected,
+                    ]}
+                  >
+                    {cancelReason === reason && <View style={styles.reasonRadioDot} />}
+                  </View>
+                  <Text
+                    style={[
+                      styles.reasonOptionText,
+                      cancelReason === reason && styles.reasonOptionTextSelected,
+                    ]}
+                  >
+                    {reason}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+
+              <TouchableOpacity
+                style={[
+                  styles.reasonOption,
+                  cancelReason === 'custom' && styles.reasonOptionSelected,
+                ]}
+                onPress={() => setCancelReason('custom')}
+                activeOpacity={0.7}
+                disabled={cancelling}
+              >
+                <View
+                  style={[
+                    styles.reasonRadio,
+                    cancelReason === 'custom' && styles.reasonRadioSelected,
+                  ]}
+                >
+                  {cancelReason === 'custom' && <View style={styles.reasonRadioDot} />}
+                </View>
+                <Text
+                  style={[
+                    styles.reasonOptionText,
+                    cancelReason === 'custom' && styles.reasonOptionTextSelected,
+                  ]}
+                >
+                  Other reason
+                </Text>
+              </TouchableOpacity>
+
+              {cancelReason === 'custom' && (
+                <TextInput
+                  style={styles.customReasonInput}
+                  placeholder="Type your reason..."
+                  placeholderTextColor="#94A3B8"
+                  value={customCancelReason}
+                  onChangeText={setCustomCancelReason}
+                  multiline
+                  numberOfLines={3}
+                  textAlignVertical="top"
+                  editable={!cancelling}
+                />
+              )}
+            </View>
+
+            <View style={styles.cancelModalActions}>
+              <TouchableOpacity
+                style={styles.cancelModalKeep}
+                onPress={() => setCancelModalVisible(false)}
+                disabled={cancelling}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.cancelModalKeepText}>Keep Booking</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.cancelModalConfirm,
+                  (!cancelReason ||
+                    (cancelReason === 'custom' && !customCancelReason.trim())) &&
+                    styles.cancelModalConfirmDisabled,
+                ]}
+                onPress={handleConfirmCancel}
+                disabled={
+                  cancelling ||
+                  !cancelReason ||
+                  (cancelReason === 'custom' && !customCancelReason.trim())
+                }
+                activeOpacity={0.7}
+              >
+                {cancelling ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <>
+                    <Icon name="close" size={18} color="#FFFFFF" />
+                    <Text style={styles.cancelModalConfirmText}>Cancel Booking</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -885,6 +1248,195 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   homeButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  successOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  successContainer: {
+    width: width * 0.82,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 22,
+    paddingVertical: 34,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+    shadowColor: '#111827',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.2,
+    shadowRadius: 18,
+    elevation: 12,
+  },
+  successCheckCircle: {
+    width: 84,
+    height: 84,
+    borderRadius: 42,
+    backgroundColor: '#10B981',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  successTitle: {
+    fontSize: 23,
+    fontWeight: '800',
+    color: '#111827',
+    marginBottom: 8,
+  },
+  successSubtitle: {
+    fontSize: 14,
+    color: '#4B5563',
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  confettiDot: {
+    position: 'absolute',
+    width: 9,
+    height: 16,
+    borderRadius: 3,
+    top: '50%',
+    left: '50%',
+    marginTop: -8,
+    marginLeft: -4.5,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    justifyContent: 'flex-end',
+  },
+  cancelModalContainer: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 34,
+    maxHeight: height * 0.78,
+  },
+  cancelModalHeader: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  cancelModalIconWrap: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#FFFBEB',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  cancelModalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#0F172A',
+    marginBottom: 4,
+  },
+  cancelModalSubtitle: {
+    fontSize: 13,
+    color: '#64748B',
+  },
+  cancelReasonLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1E293B',
+    marginBottom: 12,
+  },
+  reasonList: {
+    maxHeight: 280,
+    marginBottom: 14,
+  },
+  reasonOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    marginBottom: 8,
+    backgroundColor: '#FFFFFF',
+  },
+  reasonOptionSelected: {
+    borderColor: '#F59E0B',
+    backgroundColor: '#FFFBEB',
+  },
+  reasonRadio: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: '#CBD5E1',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+  },
+  reasonRadioSelected: {
+    borderColor: '#F59E0B',
+  },
+  reasonRadioDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#F59E0B',
+  },
+  reasonOptionText: {
+    fontSize: 14,
+    color: '#334155',
+    flex: 1,
+  },
+  reasonOptionTextSelected: {
+    color: '#92400E',
+    fontWeight: '600',
+  },
+  customReasonInput: {
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    minHeight: 90,
+    fontSize: 14,
+    color: '#1E293B',
+    marginTop: 4,
+    marginBottom: 6,
+  },
+  cancelModalActions: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  cancelModalKeep: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 12,
+    paddingVertical: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+  cancelModalKeepText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#334155',
+  },
+  cancelModalConfirm: {
+    flex: 1,
+    borderRadius: 12,
+    paddingVertical: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#EF4444',
+    flexDirection: 'row',
+    gap: 6,
+  },
+  cancelModalConfirmDisabled: {
+    opacity: 0.45,
+  },
+  cancelModalConfirmText: {
     fontSize: 15,
     fontWeight: '600',
     color: '#FFFFFF',

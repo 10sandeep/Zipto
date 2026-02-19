@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import Mapbox from '@rnmapbox/maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useIsFocused } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AppStackParamList } from '../navigation/AppNavigator';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
@@ -30,6 +30,7 @@ Mapbox.setAccessToken(
 const Home = () => {
   const navigation =
     useNavigation<NativeStackNavigationProp<AppStackParamList>>();
+  const isFocused = useIsFocused();
 
   const cameraRef = useRef<Mapbox.Camera>(null);
   const [userLocation, setUserLocation] = useState<[number, number] | null>(
@@ -185,6 +186,7 @@ const Home = () => {
         logoEnabled={false}
         attributionEnabled={false}
         onDidFinishLoadingMap={() => setIsMapLoading(false)}
+        onDidFailLoadingMap={() => setIsMapLoading(false)}
       >
         <Mapbox.Camera
           ref={cameraRef}
@@ -305,7 +307,7 @@ const Home = () => {
 
       {/* Loading Spinner */}
       <Spinner
-        visible={isMapLoading}
+        visible={isFocused && isMapLoading}
         overlay={true}
         size="large"
         color="#3B82F6"

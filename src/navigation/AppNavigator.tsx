@@ -48,6 +48,8 @@ export type AppStackParamList = {
     dropCoords?: { latitude: number; longitude: number };
     vehicleType?: string;
     fare?: number;
+    showBookingSuccess?: boolean;
+    paymentMethod?: 'cash' | 'online';
   };
   Payment: undefined;
   BookingHistory: undefined;

@@ -80,9 +80,13 @@ const FareEstimate = () => {
     fetchFareEstimate();
   }, [fetchFareEstimate]);
 
-  const navigateToTracking = (bookingId: string) => {
+  const navigateToTracking = (
+    bookingId: string,
+    showBookingSuccess = false,
+    paymentMethod: 'cash' | 'online' = selectedPayment,
+  ) => {
     navigation.reset({
-      index: 0,
+      index: 1,
       routes: [
         { name: 'Home' },
         {
@@ -95,6 +99,8 @@ const FareEstimate = () => {
             dropCoords,
             vehicleType: vehicle?.id || 'bike',
             fare: estimateData?.estimated_fare || 0,
+            showBookingSuccess,
+            paymentMethod,
           },
         },
       ],
@@ -170,13 +176,13 @@ const FareEstimate = () => {
           Alert.alert('Verification Failed', 'Payment collected but verification failed. Contact support.');
           return;
         }
-        navigateToTracking(bookingId);
+        navigateToTracking(bookingId, true, 'online');
       } else if (message.type === 'PAYMENT_CANCELLED') {
         Alert.alert('Payment Cancelled', 'Your booking is saved. You can retry payment later.');
       } else if (message.type === 'PAYMENT_FAILED') {
         Alert.alert('Payment Failed', message.error?.description || 'Payment could not be completed.');
       }
-    } catch (err) {
+    } catch {
       setPaymentModal(null);
       setBookingLoading(false);
       Alert.alert('Error', 'Something went wrong with the payment.');
@@ -232,7 +238,7 @@ const FareEstimate = () => {
         setBookingLoading(false);
         setPaymentModal({ html, bookingId });
       } else {
-        navigateToTracking(bookingId);
+        navigateToTracking(bookingId, true, 'cash');
       }
     } catch (err: any) {
       console.error('Booking error:', err);

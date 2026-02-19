@@ -16,6 +16,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Geolocation from '@react-native-community/geolocation';
 import { mapboxApi } from '../api/mapbox';
+import { useAuthStore } from '../store/useAuthStore';
 
 // Type definitions
 type Location = {
@@ -51,6 +52,7 @@ const LOCATION_TYPES: LocationType[] = ['Home', 'Shop', 'Office', 'Other'];
 const PickupDropSelection = () => {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
+  const { user } = useAuthStore();
   const serviceCategory = route.params?.serviceCategory || 'send_packages';
   const [pickup, setPickup] = useState('');
   const [drop, setDrop] = useState('');
@@ -110,6 +112,17 @@ const PickupDropSelection = () => {
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (user?.name && !senderName.trim()) {
+      setSenderName(user.name);
+    }
+
+    if (user?.phone && !senderMobile.trim()) {
+      const mobile = user.phone.replace(/\D/g, '').slice(-10);
+      setSenderMobile(mobile);
+    }
+  }, [user, senderName, senderMobile]);
 
   const getCurrentLocation = () => {
     setIsLoadingLocation(true);
