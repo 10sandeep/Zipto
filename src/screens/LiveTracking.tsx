@@ -20,12 +20,11 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { vehicleApi } from '../api/vehicle';
 import { mapboxApi } from '../api/mapbox';
+import {MAPBOX_PUBLIC_TOKEN} from '../config/mapboxToken';
 
 const { width, height } = Dimensions.get('window');
 
-Mapbox.setAccessToken(
-  'MAPBOX_PUBLIC_TOKEN_REMOVED',
-);
+Mapbox.setAccessToken(MAPBOX_PUBLIC_TOKEN);
 
 type BookingStatus = 'searching' | 'assigned' | 'arriving' | 'in_progress' | 'completed' | 'cancelled';
 

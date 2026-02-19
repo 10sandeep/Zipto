@@ -19,13 +19,12 @@ import Geolocation from '@react-native-community/geolocation';
 import BottomTabBar from './BottomTabBar';
 import Spinner from '../components/Spinner';
 import { useAuthStore } from '../store/useAuthStore';
+import {MAPBOX_PUBLIC_TOKEN} from '../config/mapboxToken';
 
 const { width, height } = Dimensions.get('window');
 
 // Initialize Mapbox OUTSIDE the component
-Mapbox.setAccessToken(
-  'MAPBOX_PUBLIC_TOKEN_REMOVED',
-);
+Mapbox.setAccessToken(MAPBOX_PUBLIC_TOKEN);
 
 const Home = () => {
   const navigation =

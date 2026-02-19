@@ -1,7 +1,7 @@
 import axios from 'axios';
+import {MAPBOX_PUBLIC_TOKEN} from '../config/mapboxToken';
 
-const MAPBOX_ACCESS_TOKEN =
-  'MAPBOX_PUBLIC_TOKEN_REMOVED';
+const MAPBOX_ACCESS_TOKEN = MAPBOX_PUBLIC_TOKEN;
 
 // Mapbox Search Box API v1 client
 const searchBoxClient = axios.create({

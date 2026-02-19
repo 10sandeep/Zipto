@@ -35,6 +35,9 @@ local.properties
 !debug.keystore
 .kotlin/
 
+# Mapbox token config (contains secrets - do not commit)
+src/config/mapboxToken.ts
+
 # node.js
 #
 node_modules/
