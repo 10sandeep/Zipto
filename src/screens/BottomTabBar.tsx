@@ -11,7 +11,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AppStackParamList } from '../navigation/AppNavigator';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
-type TabName = 'Home' | 'MyOrders' | 'Payment' | 'Coins' | 'Profile';
+type TabName = 'Home' | 'MyOrders' | 'Coins' | 'Profile';
 
 interface TabConfig {
   name: TabName;
@@ -22,7 +22,6 @@ interface TabConfig {
 const tabs: TabConfig[] = [
   { name: 'Home', icon: 'home', label: 'Home' },
   { name: 'MyOrders', icon: 'receipt-long', label: 'My Orders' },
-  { name: 'Payment', icon: 'payment', label: 'Payment' },
   { name: 'Coins', icon: 'stars', label: 'Coins' },
   { name: 'Profile', icon: 'person', label: 'Profile' },
 ];

@@ -14,8 +14,6 @@ import Profile from '../screens/Profile';
 import Coins from '../screens/Coins';
 import TransactionHistory from '../screens/TransactionHistory';
 import TransferToWallet from '../screens/TransferWallet';
-import GetDiscount from '../screens/GetDiscount';
-import RedeemVouchers from '../screens/RedeemVoucher';
 
 // Import all Profile-related screens
 import EditProfile from '../screens/EditProfile';
@@ -39,10 +37,20 @@ const PlaceholderScreen = ({ name }: { name: string }) => (
 
 export type AppStackParamList = {
   Home: undefined;
-  PickupDropSelection: undefined;
+  PickupDropSelection: { serviceCategory?: string } | undefined;
   VehicleSelection: undefined;
   FareEstimate: { vehicle: string } | undefined;
-  LiveTracking: undefined;
+  LiveTracking: {
+    bookingId: string;
+    pickup?: string;
+    drop?: string;
+    pickupCoords?: { latitude: number; longitude: number };
+    dropCoords?: { latitude: number; longitude: number };
+    vehicleType?: string;
+    fare?: number;
+    showBookingSuccess?: boolean;
+    paymentMethod?: 'cash' | 'online';
+  };
   Payment: undefined;
   BookingHistory: undefined;
   Profile: undefined;
@@ -63,8 +71,6 @@ export type AppStackParamList = {
   Coins: undefined;
   TransactionHistory: undefined;
   TransferToWallet: undefined;
-  GetDiscount: undefined;
-  RedeemVouchers: undefined;
 };
 
 const Stack = createNativeStackNavigator<AppStackParamList>();
@@ -193,20 +199,6 @@ const AppNavigator = () => {
       <Stack.Screen 
         name="TransferToWallet" 
         component={TransferToWallet}
-        options={{
-          animation: 'slide_from_right',
-        }}
-      />
-      <Stack.Screen 
-        name="GetDiscount" 
-        component={GetDiscount}
-        options={{
-          animation: 'slide_from_right',
-        }}
-      />
-      <Stack.Screen 
-        name="RedeemVouchers" 
-        component={RedeemVouchers}
         options={{
           animation: 'slide_from_right',
         }}

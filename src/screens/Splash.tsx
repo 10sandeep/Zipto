@@ -1,97 +1,45 @@
-import React, { useEffect, useRef } from 'react';
-import {
-  View,
-  StyleSheet,
-  Animated,
-  Dimensions,
-  Image,
-} from 'react-native';
+import React, { useEffect } from 'react';
+import { View, StyleSheet, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
-
-const { width, height } = Dimensions.get('window');
+import { useAuthStore } from '../store/useAuthStore';
 
 const Splash = () => {
   const navigation = useNavigation<any>();
-
-  /** LOGO **/
-  const logoScale = useRef(new Animated.Value(0.3)).current;
-  const logoOpacity = useRef(new Animated.Value(0)).current;
-
-  /** BACKGROUND FADE **/
-  const backgroundOpacity = useRef(new Animated.Value(0)).current;
+  const { isAuthenticated, token } = useAuthStore();
 
   useEffect(() => {
-    Animated.sequence([
-      // Fade in background
-      Animated.timing(backgroundOpacity, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      }),
+    // Check if user is already authenticated and log token
+    if (isAuthenticated && token) {
+      console.log('👤 Already authenticated! Bearer Token:', token);
+    }
 
-      // Logo animation (scale + fade)
-      Animated.parallel([
-        Animated.spring(logoScale, {
-          toValue: 1,
-          friction: 8,
-          tension: 40,
-          useNativeDriver: true,
-        }),
-        Animated.timing(logoOpacity, {
-          toValue: 1,
-          duration: 600,
-          useNativeDriver: true,
-        }),
-      ]),
-
-      // Hold for a moment
-      Animated.delay(1500),
-
-      // Fade out logo
-      Animated.timing(logoOpacity, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
+    // Simple timeout instead of complex animations
+    const timer = setTimeout(() => {
       navigation.replace('LanguageSelection');
-    });
-  }, []);
+    }, 2500); // 2.5 seconds
+
+    return () => clearTimeout(timer);
+  }, [navigation, isAuthenticated, token]);
 
   return (
     <View style={styles.container}>
-      <Animated.View
-        style={[
-          StyleSheet.absoluteFill,
-          { opacity: backgroundOpacity },
-        ]}
-      >
-        <LinearGradient
-          colors={['#1E3A8A', '#3B82F6', '#8B5CF6', '#EC4899', '#F59E0B']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={StyleSheet.absoluteFill}
-        />
-      </Animated.View>
+      <LinearGradient
+        colors={['#1E3A8A', '#3B82F6', '#8B5CF6', '#EC4899', '#F59E0B']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={StyleSheet.absoluteFill}
+      />
 
       <View style={styles.content}>
         {/* Logo Container */}
-        <Animated.View
-          style={[
-            styles.logoContainer,
-            {
-              opacity: logoOpacity,
-              transform: [{ scale: logoScale }],
-            },
-          ]}
-        >
+        <View style={styles.logoContainer}>
           <Image
             source={require('../assets/images/logo_zipto.png')}
             style={styles.logoImage}
             resizeMode="contain"
           />
-        </Animated.View>
+        </View>
       </View>
     </View>
   );

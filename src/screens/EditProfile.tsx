@@ -6,19 +6,68 @@ import {
   TouchableOpacity,
   ScrollView,
   TextInput,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AppStackParamList } from '../navigation/AppNavigator';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import { useAuthStore } from '../store/useAuthStore';
+import { authApi } from '../api/client';
 
 const EditProfile = () => {
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
-  const [name, setName] = useState('John Doe');
-  const [email, setEmail] = useState('john.doe@example.com');
-  const [phone, setPhone] = useState('+91 98765 43210');
-  const [address, setAddress] = useState('');
+  const { user, profile, fetchProfile } = useAuthStore();
+  
+  const [name, setName] = useState(user?.name || '');
+  const [email, setEmail] = useState(user?.email || '');
+  const [phone, setPhone] = useState(user?.phone || '');
+  const [address, setAddress] = useState(profile?.address || '');
+  const [isLoading, setIsLoading] = useState(false);
+
+  React.useEffect(() => {
+    if (user) {
+      setName(user.name || '');
+      setEmail(user.email || '');
+      setPhone(user.phone || '');
+    }
+    if (profile) {
+      setAddress(profile.address || '');
+    }
+  }, [user, profile]);
+
+  const handleSave = async () => {
+    if (!name || !email) {
+      Alert.alert('Error', 'Name and Email are required');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const payload = {
+        name,
+        email,
+        address,
+        language_preference: 'en',
+      };
+
+      await authApi.updateCustomerProfile(payload);
+      
+      // Refresh profile data
+      await fetchProfile();
+      
+      Alert.alert('Success', 'Profile updated successfully', [
+        { text: 'OK', onPress: () => navigation.goBack() }
+      ]);
+    } catch (error: any) {
+      console.error('Update profile error:', error);
+      Alert.alert('Error', error.response?.data?.message || 'Failed to update profile');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -100,8 +149,16 @@ const EditProfile = () => {
 
           {/* Save Button */}
           <View style={styles.buttonContainer}>
-            <TouchableOpacity style={styles.saveButton}>
-              <Text style={styles.saveButtonText}>Save Changes</Text>
+            <TouchableOpacity 
+              style={[styles.saveButton, isLoading && styles.saveButtonDisabled]} 
+              onPress={handleSave}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <Text style={styles.saveButtonText}>Save Changes</Text>
+              )}
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -222,6 +279,9 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
+  },
+  saveButtonDisabled: {
+    opacity: 0.7,
   },
   saveButtonText: {
     color: '#FFFFFF',

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,8 +6,6 @@ import {
   SafeAreaView,
   TextInput,
   TouchableOpacity,
-  Animated,
-  Easing,
   KeyboardAvoidingView,
   Platform,
   Image,
@@ -16,6 +14,7 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
+import { useAuthStore } from '../store/useAuthStore';
 
 const Login = () => {
   const navigation = useNavigation<any>();
@@ -26,32 +25,17 @@ const Login = () => {
   const [error, setError] = useState('');
   const [keyboardOpen, setKeyboardOpen] = useState(false);
 
-  // Animations
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(30)).current;
-  const heroScale = useRef(new Animated.Value(0.9)).current;
-  const heroHeight = useRef(new Animated.Value(180)).current;
-  const buttonScale = useRef(new Animated.Value(0)).current;
+  const [heroHeight, setHeroHeight] = useState(180);
 
   useEffect(() => {
     const showSub = Keyboard.addListener('keyboardDidShow', () => {
       setKeyboardOpen(true);
-      // Reduce hero height when keyboard opens
-      Animated.timing(heroHeight, {
-        toValue: 120,
-        duration: 300,
-        useNativeDriver: false,
-      }).start();
+      setHeroHeight(120);
     });
 
     const hideSub = Keyboard.addListener('keyboardDidHide', () => {
       setKeyboardOpen(false);
-      // Restore hero height when keyboard closes
-      Animated.timing(heroHeight, {
-        toValue: 180,
-        duration: 300,
-        useNativeDriver: false,
-      }).start();
+      setHeroHeight(180);
     });
 
     return () => {
@@ -60,45 +44,21 @@ const Login = () => {
     };
   }, []);
 
-  useEffect(() => {
-    Animated.spring(heroScale, {
-      toValue: 1,
-      friction: 6,
-      tension: 40,
-      useNativeDriver: true,
-    }).start();
+  const { login, isLoading, error: authError } = useAuthStore();
 
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 800,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 800,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-    ]).start();
-
-    setTimeout(() => {
-      Animated.spring(buttonScale, {
-        toValue: 1,
-        friction: 6,
-        tension: 40,
-        useNativeDriver: true,
-      }).start();
-    }, 400);
-  }, []);
-
-  const handleGetOTP = () => {
+  const handleGetOTP = async () => {
     if (phoneNumber.length !== 10) {
       setError('Invalid mobile number');
       return;
     }
     setError('');
-    navigation.navigate('OTPVerification', { mobile: phoneNumber });
+    try {
+      await login(countryCode + phoneNumber);
+      navigation.navigate('OTPVerification', { mobile: phoneNumber, fullMobile: countryCode + phoneNumber });
+    } catch (err) {
+      // Error handling is managed by store state or caught here
+      console.log('Login error', err);
+    }
   };
 
   const handleSocialLogin = (provider: string) => {
@@ -117,31 +77,18 @@ const Login = () => {
           keyboardShouldPersistTaps="handled"
         >
           {/* HERO SECTION */}
-          <Animated.View
-            style={[
-              styles.heroContainer,
-              { transform: [{ scale: heroScale }] },
-            ]}
-          >
-            <Animated.View style={[styles.heroCard, { height: heroHeight }]}>
+          <View style={styles.heroContainer}>
+            <View style={[styles.heroCard, { height: heroHeight }]}>
               <Image
                 source={require('../assets/images/heroimg2.jpg')}
                 style={styles.heroImage}
                 resizeMode="cover"
               />
-            </Animated.View>
-          </Animated.View>
+            </View>
+          </View>
 
           <View style={styles.contentWrapper}>
-            <Animated.View
-              style={[
-                styles.content,
-                {
-                  opacity: fadeAnim,
-                  transform: [{ translateY: slideAnim }],
-                },
-              ]}
-            >
+            <View style={styles.content}>
               <View style={styles.formSection}>
                 <Text style={styles.title}>Let's get moving</Text>
                 <Text style={styles.subtitle}>
@@ -184,17 +131,19 @@ const Login = () => {
                 </View>
 
                 {error ? <Text style={styles.errorText}>{error}</Text> : null}
+                {authError ? <Text style={styles.errorText}>{authError}</Text> : null}
 
-                <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
+
+                <View>
                   <TouchableOpacity
                     style={styles.otpButton}
                     onPress={handleGetOTP}
                     activeOpacity={0.8}
                   >
-                    <Text style={styles.otpButtonText}>Get OTP</Text>
+                    <Text style={styles.otpButtonText}>{isLoading ? 'Sending...' : 'Get OTP'}</Text>
                     <Text style={styles.arrow}>→</Text>
                   </TouchableOpacity>
-                </Animated.View>
+                </View>
 
                 {!keyboardOpen && (
                   <>
@@ -230,7 +179,7 @@ const Login = () => {
                   <Text style={styles.link}>Privacy Policy</Text>.
                 </Text>
               )}
-            </Animated.View>
+            </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

@@ -6,57 +6,79 @@ import {
   SafeAreaView,
   TextInput,
   TouchableOpacity,
-  Animated,
-  Easing,
   KeyboardAvoidingView,
   Platform,
   Image,
   Keyboard,
   ScrollView,
+  Modal,
+  Animated,
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
-import { useDispatch } from 'react-redux';
-import { loginStart, loginSuccess } from '../store';
+import { useAuthStore } from '../store/useAuthStore';
+
+/* Success Modal Component */
+const SuccessModal = ({
+  visible,
+  onClose,
+}: {
+  visible: boolean;
+  onClose: () => void;
+}) => (
+  <Modal
+    animationType="fade"
+    transparent={true}
+    visible={visible}
+    onRequestClose={() => {}}
+  >
+    <View style={styles.modalOverlay}>
+      <View style={styles.modalContent}>
+        <View style={styles.successIconContainer}>
+          <Text style={styles.successIcon}>✓</Text>
+        </View>
+        <Text style={styles.modalTitle}>Verification Successful!</Text>
+        <Text style={styles.modalMessage}>
+          Your account has been verified successfully. Welcome to Zipto!
+        </Text>
+        <TouchableOpacity style={styles.modalButton} onPress={onClose}>
+          <Text style={styles.modalButtonText}>Continue</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  </Modal>
+);
 
 const OTPVerification = () => {
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
   const { t } = useTranslation();
-  const dispatch = useDispatch();
+  const { verifyOtp, isLoading, error: authError } = useAuthStore();
 
-  const { mobile } = route.params || { mobile: '' };
+  const { mobile, fullMobile } = route.params || { mobile: '', fullMobile: '' };
 
   const [otp, setOtp] = useState('');
   const [error, setError] = useState('');
   const [keyboardOpen, setKeyboardOpen] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
-  // Animations
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(30)).current;
-  const heroScale = useRef(new Animated.Value(0.9)).current;
-  const heroHeight = useRef(new Animated.Value(180)).current;
-  const buttonScale = useRef(new Animated.Value(0)).current;
+  const [heroHeight, setHeroHeight] = useState(180);
+
+  // Animated values
+  const heroScale = useRef(new Animated.Value(1)).current;
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+  const slideAnim = useRef(new Animated.Value(0)).current;
+  const buttonScale = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     const showSub = Keyboard.addListener('keyboardDidShow', () => {
       setKeyboardOpen(true);
-      // Reduce hero height when keyboard opens
-      Animated.timing(heroHeight, {
-        toValue: 120,
-        duration: 300,
-        useNativeDriver: false,
-      }).start();
+      setHeroHeight(120);
     });
 
     const hideSub = Keyboard.addListener('keyboardDidHide', () => {
       setKeyboardOpen(false);
-      // Restore hero height when keyboard closes
-      Animated.timing(heroHeight, {
-        toValue: 180,
-        duration: 300,
-        useNativeDriver: false,
-      }).start();
+      setHeroHeight(180);
     });
 
     return () => {
@@ -65,55 +87,30 @@ const OTPVerification = () => {
     };
   }, []);
 
-  useEffect(() => {
-    Animated.spring(heroScale, {
-      toValue: 1,
-      friction: 6,
-      tension: 40,
-      useNativeDriver: true,
-    }).start();
-
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 800,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 800,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-    ]).start();
-
-    setTimeout(() => {
-      Animated.spring(buttonScale, {
-        toValue: 1,
-        friction: 6,
-        tension: 40,
-        useNativeDriver: true,
-      }).start();
-    }, 400);
-  }, []);
-
-  const handleVerify = () => {
-    if (otp.length !== 4) {
-      setError('Please enter 4-digit OTP');
+  const handleVerify = async () => {
+    if (otp.length !== 6) {
+      setError('Please enter 6-digit OTP');
       return;
     }
 
     setError('');
-    dispatch(loginStart());
 
-    setTimeout(() => {
-      dispatch(
-        loginSuccess({
-          user: { id: '1', name: 'User', mobile },
-          token: 'dummy-token',
-        }),
-      );
-    }, 1000);
+    try {
+      const phoneToVerify = fullMobile || mobile;
+      await verifyOtp(phoneToVerify, otp);
+
+      // Show success modal - navigation will happen automatically
+      // because Zustand sets isAuthenticated: true and RootNavigator listens to it
+      setShowSuccessModal(true);
+    } catch (err: any) {
+      console.log('Verification error', err);
+      setError(err?.message || 'Verification failed. Please try again.');
+    }
+  };
+
+  const handleSuccessModalClose = () => {
+    setShowSuccessModal(false);
+    // Navigation happens automatically via RootNavigator when isAuthenticated becomes true
   };
 
   const handleResendOTP = () => {
@@ -122,6 +119,10 @@ const OTPVerification = () => {
 
   return (
     <SafeAreaView style={styles.container}>
+      <SuccessModal
+        visible={showSuccessModal}
+        onClose={handleSuccessModalClose}
+      />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
@@ -144,9 +145,6 @@ const OTPVerification = () => {
                 style={styles.heroImage}
                 resizeMode="cover"
               />
-              {/* <View style={styles.heroOverlay}>
-                <Text style={styles.heroText}>Fast & Reliable</Text>
-              </View> */}
             </Animated.View>
           </Animated.View>
 
@@ -163,7 +161,7 @@ const OTPVerification = () => {
               <View style={styles.formSection}>
                 <Text style={styles.title}>Verify OTP</Text>
                 <Text style={styles.subtitle}>
-                  We've sent a 4-digit code to {'\n'}+91 {mobile}
+                  We've sent a 6-digit code to {'\n'}+91 {mobile}
                 </Text>
 
                 {/* OTP Input */}
@@ -178,10 +176,10 @@ const OTPVerification = () => {
                     <Text style={styles.otpIcon}>🔒</Text>
                     <TextInput
                       style={styles.otpInput}
-                      placeholder="0000"
+                      placeholder="000000"
                       placeholderTextColor="#6B7280"
                       keyboardType="number-pad"
-                      maxLength={4}
+                      maxLength={6}
                       value={otp}
                       onChangeText={text => {
                         setOtp(text);
@@ -190,6 +188,9 @@ const OTPVerification = () => {
                     />
                   </View>
                   {error ? <Text style={styles.errorText}>{error}</Text> : null}
+                  {authError ? (
+                    <Text style={styles.errorText}>{authError}</Text>
+                  ) : null}
                 </View>
 
                 {/* Resend OTP */}
@@ -210,9 +211,10 @@ const OTPVerification = () => {
                     style={styles.verifyButton}
                     onPress={handleVerify}
                     activeOpacity={0.8}
+                    disabled={isLoading}
                   >
                     <Text style={styles.verifyButtonText}>
-                      Verify & Continue
+                      {isLoading ? 'Verifying...' : 'Verify & Continue'}
                     </Text>
                     <Text style={styles.arrow}>→</Text>
                   </TouchableOpacity>
@@ -282,12 +284,6 @@ const styles = StyleSheet.create({
     height: '114%',
     position: 'absolute',
   },
-  heroOverlay: {
-    position: 'absolute',
-    top: 16,
-    left: 16,
-    right: 16,
-  },
 
   heroText: {
     fontSize: 20,
@@ -350,10 +346,10 @@ const styles = StyleSheet.create({
   },
   otpInput: {
     flex: 1,
-    fontSize: 24,
+    fontSize: 22,
     color: '#0F172A',
     paddingVertical: 16,
-    letterSpacing: 12,
+    letterSpacing: 8,
     textAlign: 'center',
   },
 
@@ -430,6 +426,69 @@ const styles = StyleSheet.create({
   },
   link: {
     color: '#2563EB',
+  },
+
+  /* Modal Styles */
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    borderRadius: 20,
+    padding: 24,
+    width: '80%',
+    alignItems: 'center',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+  },
+  successIconContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#4ADE80',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  successIcon: {
+    fontSize: 32,
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#0F172A',
+    marginBottom: 8,
+    fontFamily: 'Poppins-Regular',
+  },
+  modalMessage: {
+    fontSize: 14,
+    color: '#64748B',
+    textAlign: 'center',
+    marginBottom: 24,
+    fontFamily: 'Poppins-Regular',
+    lineHeight: 20,
+  },
+  modalButton: {
+    backgroundColor: '#2563EB',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 32,
+    width: '100%',
+    alignItems: 'center',
+  },
+  modalButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+    fontFamily: 'Poppins-Regular',
   },
 });
 
