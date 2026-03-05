@@ -8,17 +8,18 @@ import {
   SafeAreaView,
   Animated,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { vehicleApi, VehicleType } from '../api/vehicle';
 
-// Emoji mapping for vehicle types
-const VEHICLE_EMOJIS: Record<string, string> = {
-  bike: '🏍️',
-  tata_ace: '🚐',
-  pickup_van: '🚐',
-  mini_truck: '🚚',
+// Image mapping for vehicle types
+const VEHICLE_IMAGES: Record<string, any> = {
+  bike: require('../assets/images/vehicle2.png'),
+  tata_ace: require('../assets/images/vehicle3.png'),
+ wheeler_auto: require('../assets/images/vehicle1.png'),
+  mini_truck: require('../assets/images/vehicle4.png'),
 };
 
 // UI Vehicle type (transformed from API)
@@ -28,7 +29,6 @@ interface UIVehicle {
   priceRange: string;
   basePrice: number;
   capacity: string;
-  emoji: string;
 }
 
 const VehicleSelection = () => {
@@ -40,15 +40,12 @@ const VehicleSelection = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Get data from route params
   const { pickup, drop, pickupCoords, dropCoords, city, serviceCategory, senderName, senderMobile } = route.params || {};
 
-  // Animated values
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const slideAnim = useRef(new Animated.Value(0)).current;
   const buttonScale = useRef(new Animated.Value(1)).current;
 
-  // Fetch vehicle types on mount
   useEffect(() => {
     fetchVehicleTypes();
   }, []);
@@ -60,7 +57,6 @@ const VehicleSelection = () => {
       const response = await vehicleApi.getVehicleTypes();
 
       if (response.success && response.data) {
-        // Transform API data to UI format
         const transformedVehicles: UIVehicle[] = response.data.map(
           (vehicle: VehicleType) => ({
             id: vehicle.type,
@@ -68,10 +64,8 @@ const VehicleSelection = () => {
             priceRange: `From ₹${vehicle.base_fare}`,
             basePrice: vehicle.base_fare,
             capacity: vehicle.capacity_range,
-            emoji: VEHICLE_EMOJIS[vehicle.type] || '🚗',
           }),
         );
-
         setVehicles(transformedVehicles);
       } else {
         throw new Error('Failed to fetch vehicle types');
@@ -108,32 +102,47 @@ const VehicleSelection = () => {
     if (!selectedVehicle) return '₹0';
     const vehicle = vehicles.find((v: UIVehicle) => v.id === selectedVehicle);
     const helperCost = withHelper ? 300 : 0;
-    return `₹${vehicle?.basePrice || 0 + helperCost}`;
+    return `₹${(vehicle?.basePrice || 0) + helperCost}`;
   };
 
-  const renderVehicleCard = ({ item }: { item: UIVehicle }) => (
-    <TouchableOpacity
-      style={[styles.card, selectedVehicle === item.id && styles.selectedCard]}
-      onPress={() => setSelectedVehicle(item.id)}
-      activeOpacity={0.7}
-    >
-      <View style={styles.vehicleIcon}>
-        <Text style={styles.emoji}>{item.emoji}</Text>
-      </View>
-      <View style={styles.info}>
-        <Text style={styles.name}>{item.name}</Text>
-        <Text style={styles.details}>{item.capacity}</Text>
-      </View>
-      <View style={styles.priceContainer}>
-        <Text style={styles.priceRange}>{item.priceRange}</Text>
-        {selectedVehicle === item.id && (
-          <View style={styles.checkmark}>
-            <Icon name="check-circle" size={24} color="#10B981" />
-          </View>
-        )}
-      </View>
-    </TouchableOpacity>
-  );
+  const renderVehicleCard = ({ item }: { item: UIVehicle }) => {
+    const isSelected = selectedVehicle === item.id;
+    const vehicleImage = VEHICLE_IMAGES[item.id];
+
+    return (
+      <TouchableOpacity
+        style={[styles.card, isSelected && styles.selectedCard]}
+        onPress={() => setSelectedVehicle(item.id)}
+        activeOpacity={0.7}
+      >
+        <View style={[styles.vehicleIcon, isSelected && styles.vehicleIconSelected]}>
+          {vehicleImage ? (
+            <Image
+              source={vehicleImage}
+              style={styles.vehicleImage}
+              resizeMode="contain"
+            />
+          ) : (
+            <Text style={styles.emoji}>🚗</Text>
+          )}
+        </View>
+        <View style={styles.info}>
+          <Text style={styles.name}>{item.name}</Text>
+          <Text style={styles.details}>{item.capacity}</Text>
+        </View>
+        <View style={styles.priceContainer}>
+          <Text style={[styles.priceRange, isSelected && styles.priceRangeSelected]}>
+            {item.priceRange}
+          </Text>
+          {isSelected && (
+            <View style={styles.checkmark}>
+              <Icon name="check-circle" size={24} color="#10B981" />
+            </View>
+          )}
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   const renderListHeader = () => (
     <View style={styles.listHeader}>
@@ -160,9 +169,7 @@ const VehicleSelection = () => {
         </View>
         <View style={styles.helperPriceContainer}>
           <Text style={styles.helperPrice}>+₹300</Text>
-          <View
-            style={[styles.checkbox, withHelper && styles.checkboxSelected]}
-          >
+          <View style={[styles.checkbox, withHelper && styles.checkboxSelected]}>
             {withHelper && <Icon name="check" size={16} color="#FFFFFF" />}
           </View>
         </View>
@@ -175,25 +182,14 @@ const VehicleSelection = () => {
       <SafeAreaView style={styles.safeArea}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={styles.backButton}
-          >
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
             <Icon name="arrow-back" size={24} color="#1E293B" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Select Vehicle</Text>
         </View>
 
         {/* Scrollable Content */}
-        <Animated.View
-          style={[
-            styles.content,
-            {
-              opacity: fadeAnim,
-              transform: [{ translateY: slideAnim }],
-            },
-          ]}
-        >
+        <Animated.View style={[styles.content, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
           {loading ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color="#3B82F6" />
@@ -203,11 +199,7 @@ const VehicleSelection = () => {
             <View style={styles.errorContainer}>
               <Icon name="error-outline" size={48} color="#EF4444" />
               <Text style={styles.errorText}>{error}</Text>
-              <TouchableOpacity
-                style={styles.retryButton}
-                onPress={fetchVehicleTypes}
-                activeOpacity={0.7}
-              >
+              <TouchableOpacity style={styles.retryButton} onPress={fetchVehicleTypes} activeOpacity={0.7}>
                 <Icon name="refresh" size={20} color="#FFFFFF" />
                 <Text style={styles.retryButtonText}>Retry</Text>
               </TouchableOpacity>
@@ -234,33 +226,17 @@ const VehicleSelection = () => {
               <Text style={styles.totalPrice}>{calculateTotalPrice()}</Text>
             </View>
           )}
-          <Animated.View
-            style={{
-              transform: [{ scale: buttonScale }],
-            }}
-          >
+          <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
             <TouchableOpacity
-              style={[
-                styles.nextButton,
-                !selectedVehicle && styles.nextButtonDisabled,
-              ]}
+              style={[styles.nextButton, !selectedVehicle && styles.nextButtonDisabled]}
               onPress={handleBook}
               disabled={!selectedVehicle}
               activeOpacity={0.8}
             >
-              <Text
-                style={[
-                  styles.nextButtonText,
-                  !selectedVehicle && styles.nextButtonTextDisabled,
-                ]}
-              >
+              <Text style={[styles.nextButtonText, !selectedVehicle && styles.nextButtonTextDisabled]}>
                 Continue to Book
               </Text>
-              <Text
-                style={[styles.arrow, !selectedVehicle && styles.arrowDisabled]}
-              >
-                →
-              </Text>
+              <Text style={[styles.arrow, !selectedVehicle && styles.arrowDisabled]}>→</Text>
             </TouchableOpacity>
           </Animated.View>
         </View>
@@ -317,6 +293,8 @@ const styles = StyleSheet.create({
     color: '#1E293B',
     marginBottom: 12,
   },
+
+  /* Vehicle Card */
   card: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -337,13 +315,21 @@ const styles = StyleSheet.create({
     backgroundColor: '#EFF6FF',
   },
   vehicleIcon: {
-    width: 60,
+    width: 70,
     height: 60,
     borderRadius: 12,
-    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    backgroundColor: 'rgba(59, 130, 246, 0.08)',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
+    overflow: 'hidden',
+  },
+  vehicleIconSelected: {
+    backgroundColor: 'rgba(59, 130, 246, 0.15)',
+  },
+  vehicleImage: {
+    width: 58,
+    height: 48,
   },
   emoji: {
     fontSize: 32,
@@ -370,9 +356,14 @@ const styles = StyleSheet.create({
     color: '#3B82F6',
     marginBottom: 4,
   },
+  priceRangeSelected: {
+    color: '#2563EB',
+  },
   checkmark: {
     marginTop: 4,
   },
+
+  /* Helper Section */
   helperSection: {
     marginTop: 20,
     marginBottom: 10,
@@ -443,6 +434,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#10B981',
     borderColor: '#10B981',
   },
+
+  /* Footer */
   footer: {
     padding: 20,
     paddingBottom: 10,
@@ -499,6 +492,8 @@ const styles = StyleSheet.create({
   arrowDisabled: {
     color: '#94A3B8',
   },
+
+  /* Loading / Error */
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
