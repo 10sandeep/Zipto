@@ -11,6 +11,7 @@ import {
   Alert,
   ScrollView,
   Animated,
+  Image,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
@@ -725,9 +726,14 @@ const PickupDropSelection = () => {
             >
               Continue
             </Text>
-            <Text style={[styles.arrow, !canProceed && styles.arrowDisabled]}>
-              →
-            </Text>
+            <Image
+              source={require('../assets/images/arrow.png')}
+              style={[
+                styles.arrowIcon,
+                !canProceed && styles.arrowIconDisabled,
+              ]}
+              resizeMode="contain"
+            />
           </TouchableOpacity>
         </View>
       )}
@@ -1073,12 +1079,16 @@ const styles = StyleSheet.create({
   continueButtonTextDisabled: {
     color: '#94A3B8',
   },
-  arrow: {
-    fontSize: 18,
-    color: '#FFFFFF',
+  arrowIcon: {
+    width: 20,
+    height: 20,
+    marginLeft: 8,
+    tintColor: '#FFFFFF',
   },
-  arrowDisabled: {
-    color: '#94A3B8',
+
+  arrowIconDisabled: {
+    tintColor: '#94A3B8',
+    opacity: 0.5,
   },
 });
 
