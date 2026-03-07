@@ -18,8 +18,8 @@ import { vehicleApi, VehicleType } from '../api/vehicle';
 const VEHICLE_IMAGES: Record<string, any> = {
   bike: require('../assets/images/vehicle2.png'),
   tata_ace: require('../assets/images/vehicle3.png'),
- wheeler_auto: require('../assets/images/vehicle1.png'),
-  mini_truck: require('../assets/images/vehicle4.png'),
+  three_wheeler: require('../assets/images/vehicle1.png'),
+  pickup_8ft: require('../assets/images/vehicle4.png'),
 };
 
 // UI Vehicle type (transformed from API)
@@ -41,7 +41,16 @@ const VehicleSelection = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const { pickup, drop, pickupCoords, dropCoords, city, serviceCategory, senderName, senderMobile } = route.params || {};
+  const {
+    pickup,
+    drop,
+    pickupCoords,
+    dropCoords,
+    city,
+    serviceCategory,
+    senderName,
+    senderMobile,
+  } = route.params || {};
 
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const slideAnim = useRef(new Animated.Value(0)).current;
@@ -67,6 +76,7 @@ const VehicleSelection = () => {
             capacity: vehicle.capacity_range,
           }),
         );
+
         setVehicles(transformedVehicles);
       } else {
         throw new Error('Failed to fetch vehicle types');
@@ -117,7 +127,9 @@ const VehicleSelection = () => {
         onPress={() => setSelectedVehicle(item.id)}
         activeOpacity={0.7}
       >
-        <View style={[styles.vehicleIcon, isSelected && styles.vehicleIconSelected]}>
+        <View
+          style={[styles.vehicleIcon, isSelected && styles.vehicleIconSelected]}
+        >
           {vehicleImage ? (
             <Image
               source={vehicleImage}
@@ -133,7 +145,9 @@ const VehicleSelection = () => {
           <Text style={styles.details}>{item.capacity}</Text>
         </View>
         <View style={styles.priceContainer}>
-          <Text style={[styles.priceRange, isSelected && styles.priceRangeSelected]}>
+          <Text
+            style={[styles.priceRange, isSelected && styles.priceRangeSelected]}
+          >
             {item.priceRange}
           </Text>
           {isSelected && (
@@ -162,7 +176,11 @@ const VehicleSelection = () => {
         ]}
       >
         <View style={styles.helperIconContainer}>
-          <Text style={styles.helperEmoji}>👷</Text>
+          <Image
+            source={require('../assets/images/worker.png')}
+            style={styles.helperImage}
+            resizeMode="contain"
+          />
         </View>
         <View style={styles.helperInfo}>
           <Text style={styles.helperTitle}>Add Labour</Text>
@@ -205,14 +223,22 @@ const VehicleSelection = () => {
       <SafeAreaView style={styles.safeArea}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}
+          >
             <Icon name="arrow-back" size={24} color="#1E293B" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Select Vehicle</Text>
         </View>
 
         {/* Scrollable Content */}
-        <Animated.View style={[styles.content, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+        <Animated.View
+          style={[
+            styles.content,
+            { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
+          ]}
+        >
           {loading ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color="#3B82F6" />
@@ -222,7 +248,11 @@ const VehicleSelection = () => {
             <View style={styles.errorContainer}>
               <Icon name="error-outline" size={48} color="#EF4444" />
               <Text style={styles.errorText}>{error}</Text>
-              <TouchableOpacity style={styles.retryButton} onPress={fetchVehicleTypes} activeOpacity={0.7}>
+              <TouchableOpacity
+                style={styles.retryButton}
+                onPress={fetchVehicleTypes}
+                activeOpacity={0.7}
+              >
                 <Icon name="refresh" size={20} color="#FFFFFF" />
                 <Text style={styles.retryButtonText}>Retry</Text>
               </TouchableOpacity>
@@ -251,15 +281,30 @@ const VehicleSelection = () => {
           )}
           <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
             <TouchableOpacity
-              style={[styles.nextButton, !selectedVehicle && styles.nextButtonDisabled]}
+              style={[
+                styles.nextButton,
+                !selectedVehicle && styles.nextButtonDisabled,
+              ]}
               onPress={handleBook}
               disabled={!selectedVehicle}
               activeOpacity={0.8}
             >
-              <Text style={[styles.nextButtonText, !selectedVehicle && styles.nextButtonTextDisabled]}>
+              <Text
+                style={[
+                  styles.nextButtonText,
+                  !selectedVehicle && styles.nextButtonTextDisabled,
+                ]}
+              >
                 Continue to Book
               </Text>
-              <Text style={[styles.arrow, !selectedVehicle && styles.arrowDisabled]}>→</Text>
+              <Image
+                source={require('../assets/images/arrow.png')}
+                style={[
+                  styles.arrowIcon,
+                  !selectedVehicle && styles.arrowDisabled,
+                ]}
+                resizeMode="contain"
+              />
             </TouchableOpacity>
           </Animated.View>
         </View>
@@ -418,8 +463,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 12,
   },
-  helperEmoji: {
-    fontSize: 28,
+  helperImage: {
+    width: 28,
+    height: 28,
   },
   helperInfo: {
     flex: 1,
@@ -516,12 +562,14 @@ const styles = StyleSheet.create({
   nextButtonTextDisabled: {
     color: '#94A3B8',
   },
-  arrow: {
-    fontSize: 18,
-    color: '#FFFFFF',
+  arrowIcon: {
+    width: 20,
+    height: 20,
+    marginLeft: 10,
+    tintColor: '#FFFFFF',
   },
   arrowDisabled: {
-    color: '#94A3B8',
+    tintColor: '#94A3B8',
   },
 
   /* Loading / Error */
