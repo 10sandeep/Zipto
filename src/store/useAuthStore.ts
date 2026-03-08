@@ -3,6 +3,8 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authApi } from '../api/client';
 
+const CUSTOMER_ROLE = 'customer';
+
 interface User {
   id: string;
   name: string;
@@ -43,6 +45,17 @@ interface AuthState {
   clearError: () => void;
 }
 
+const isCustomerRole = (role?: string | null) =>
+  role?.trim().toLowerCase() === CUSTOMER_ROLE;
+
+const getCustomerRoleError = (role?: string | null) => {
+  if (role) {
+    return `This app only supports customer accounts. Current role: ${role}.`;
+  }
+
+  return 'This app only supports customer accounts.';
+};
+
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
@@ -77,6 +90,21 @@ export const useAuthStore = create<AuthState>()(
           if (response.success && response.data) {
             const { user, access_token, refresh_token } = response.data;
 
+            if (!isCustomerRole(user?.role)) {
+              const roleError = getCustomerRoleError(user?.role);
+              await AsyncStorage.multiRemove(['auth_token', 'refresh_token']);
+              set({
+                user: null,
+                profile: null,
+                token: null,
+                refreshToken: null,
+                isAuthenticated: false,
+                isLoading: false,
+                error: roleError,
+              });
+              throw new Error(roleError);
+            }
+
             // Save tokens to AsyncStorage for axios interceptor
             await AsyncStorage.setItem('auth_token', access_token);
             await AsyncStorage.setItem('refresh_token', refresh_token);
@@ -99,7 +127,7 @@ export const useAuthStore = create<AuthState>()(
           console.error('Verify OTP Error:', error);
           set({
             isLoading: false,
-            error: error.response?.data?.message || 'Invalid OTP'
+            error: error.response?.data?.message || error.message || 'Invalid OTP'
           });
           throw error;
         }
@@ -108,6 +136,24 @@ export const useAuthStore = create<AuthState>()(
       fetchProfile: async () => {
         console.log('🔄 fetchProfile called');
         try {
+          const currentUser = get().user;
+
+          if (currentUser && !isCustomerRole(currentUser.role)) {
+            const roleError = getCustomerRoleError(currentUser.role);
+            console.log('🚫 Skipping customer profile fetch for non-customer session');
+            await AsyncStorage.multiRemove(['auth_token', 'refresh_token']);
+            set({
+              user: null,
+              profile: null,
+              token: null,
+              refreshToken: null,
+              isAuthenticated: false,
+              isLoading: false,
+              error: roleError,
+            });
+            return;
+          }
+
           const response = await authApi.getCustomerProfile();
           console.log('✅ fetchProfile response:', JSON.stringify(response, null, 2));
 
@@ -132,19 +178,25 @@ export const useAuthStore = create<AuthState>()(
             dataStatus: error.response?.data?.statusCode,
             message: error.message
           });
+
+          const apiMessage = error.response?.data?.message;
           
           // Check for various forms of 401 Unauthorized
           const isUnauthorized = 
             error.response?.status === 401 || 
             error.response?.data?.statusCode === 401 ||
             (error.message && error.message.includes('401'));
+
+          const isCustomerRoleMismatch =
+            error.response?.status === 403 &&
+            typeof apiMessage === 'string' &&
+            apiMessage.toLowerCase().includes('requires one of the following roles: customer');
           
           console.log('🕵️ isUnauthorized check result:', isUnauthorized);
 
           if (isUnauthorized) {
             console.log('🔒 401 Unauthorized detected in fetchProfile, logging out...');
-            await AsyncStorage.removeItem('auth_token');
-            await AsyncStorage.removeItem('refresh_token');
+            await AsyncStorage.multiRemove(['auth_token', 'refresh_token']);
             set({
               user: null,
               profile: null,
@@ -153,7 +205,28 @@ export const useAuthStore = create<AuthState>()(
               isAuthenticated: false,
             });
             console.log('👋 Logout complete, state reset.');
+            return;
           }
+
+          if (isCustomerRoleMismatch) {
+            const roleError = getCustomerRoleError(get().user?.role);
+            console.log('🚫 Non-customer token detected during profile fetch, clearing session...');
+            await AsyncStorage.multiRemove(['auth_token', 'refresh_token']);
+            set({
+              user: null,
+              profile: null,
+              token: null,
+              refreshToken: null,
+              isAuthenticated: false,
+              isLoading: false,
+              error: roleError,
+            });
+            return;
+          }
+
+          set({
+            error: apiMessage || error.message || 'Failed to fetch profile',
+          });
         }
       },
 
@@ -188,8 +261,7 @@ export const useAuthStore = create<AuthState>()(
         } catch (error: any) {
           console.error('Refresh token error:', error);
           // If refresh fails, logout the user
-          await AsyncStorage.removeItem('auth_token');
-          await AsyncStorage.removeItem('refresh_token');
+          await AsyncStorage.multiRemove(['auth_token', 'refresh_token']);
           set({
             user: null,
             profile: null,
@@ -210,7 +282,7 @@ export const useAuthStore = create<AuthState>()(
           // Continue with local logout even if API fails
         } finally {
           // Always clear local state
-          await AsyncStorage.removeItem('auth_token');
+          await AsyncStorage.multiRemove(['auth_token', 'refresh_token']);
           set({
             user: null,
             profile: null,

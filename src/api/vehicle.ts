@@ -25,6 +25,33 @@ export interface FareEstimateRequest {
   pickup_location: LocationCoordinates;
   drop_location: LocationCoordinates;
   vehicle_type: string;
+  number_of_helpers: number;
+  extra_stops?: number;
+}
+
+export interface VehiclePricing {
+  id: string;
+  vehicle_type: string;
+  base_fare: string;
+  base_distance_km: string;
+  per_km_rate: string;
+  per_minute_rate: string;
+  minimum_fare: string;
+  surge_multiplier: string;
+  free_waiting_minutes: number;
+  waiting_charge_per_minute: string;
+  capacity_min: number;
+  capacity_max: number;
+  best_for: string | null;
+  night_surcharge_percent: string;
+  multi_stop_fee: string;
+  helper_charge_per_person: string;
+  helper_available: boolean;
+  commission_percent: string;
+  city: string;
+  is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface FareEstimateResponse {
@@ -55,6 +82,7 @@ export interface CreateBookingRequest {
   vehicle_type: string;
   booking_type: 'instant' | 'scheduled';
   scheduled_time?: string;
+  number_of_helpers?: number;
 }
 
 export interface CreateBookingResponse {
@@ -243,6 +271,11 @@ export const vehicleApi = {
    */
   getVehicleTypes: async (): Promise<VehicleTypesResponse> => {
     const response = await client.get<VehicleTypesResponse>('/vehicle/types');
+    return response.data;
+  },
+
+  getVehiclePricing: async (): Promise<VehiclePricing[]> => {
+    const response = await client.get<VehiclePricing[]>('/booking/vehicles/pricing');
     return response.data;
   },
 

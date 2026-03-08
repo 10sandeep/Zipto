@@ -9,7 +9,7 @@ const RootNavigator = () => {
     const [isHydrated, setIsHydrated] = useState(false);
     const [isVerifying, setIsVerifying] = useState(false);
     const [shouldVerifyToken, setShouldVerifyToken] = useState(false);
-    const { isAuthenticated, fetchProfile, token } = useAuthStore();
+    const { isAuthenticated, fetchProfile } = useAuthStore();
 
     useEffect(() => {
         // Wait for Zustand to rehydrate from AsyncStorage
@@ -49,7 +49,7 @@ const RootNavigator = () => {
         };
 
         verifyAndFetchProfile();
-    }, [shouldVerifyToken]);
+    }, [fetchProfile, shouldVerifyToken]);
 
     // Show loading only while hydrating or verifying token on app start
     if (!isHydrated || isVerifying) {
