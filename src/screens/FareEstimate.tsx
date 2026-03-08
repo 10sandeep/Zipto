@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   StatusBar,
   Modal,
+  Image,
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { Button } from '../components/Button';
@@ -17,6 +18,16 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import { vehicleApi, FareEstimateResponse } from '../api/vehicle';
 import { useAuthStore } from '../store/useAuthStore';
 import { WebView } from 'react-native-webview';
+
+const VEHICLE_IMAGES: Record<string, any> = {
+  bike: require('../assets/images/vehicle2.png'),
+  scooty: require('../assets/images/scooty.png'),
+  auto: require('../assets/images/vehicle1.png'),
+  pickup: require('../assets/images/vehicle3.png'),
+  mini_truck: require('../assets/images/vehicle3.png'),
+  tata_ace: require('../assets/images/vehicle3.png'),
+  tata_407: require('../assets/images/vehicle3.png'),
+};
 
 const FareEstimate = () => {
   const route = useRoute<any>();
@@ -49,6 +60,7 @@ const FareEstimate = () => {
     helperCount,
     helperCost,
   } = route.params || {};
+  const selectedVehicleType = vehicle?.vehicleType || 'bike';
 
   const fetchFareEstimate = useCallback(async () => {
     try {
@@ -57,6 +69,10 @@ const FareEstimate = () => {
 
       if (!pickupCoords || !dropCoords) {
         throw new Error('Location coordinates are required');
+      }
+
+      if (!vehicle?.vehicleType) {
+        throw new Error('Vehicle type is required');
       }
 
       const response = await vehicleApi.estimateFare({
@@ -70,7 +86,8 @@ const FareEstimate = () => {
           longitude: dropCoords.longitude,
           address: drop || '',
         },
-        vehicle_type: vehicle?.id || 'bike',
+        vehicle_type: selectedVehicleType,
+        number_of_helpers: helperCount || 0,
       });
 
       if (response.success && response.data) {
@@ -80,11 +97,15 @@ const FareEstimate = () => {
       }
     } catch (err: any) {
       console.error('Error fetching fare estimate:', err);
-      setError(err.message || 'Failed to calculate fare. Please try again.');
+      setError(
+        err.response?.data?.message ||
+          err.message ||
+          'Failed to calculate fare. Please try again.',
+      );
     } finally {
       setLoading(false);
     }
-  }, [pickupCoords, dropCoords, pickup, drop, vehicle?.id]);
+  }, [pickupCoords, dropCoords, vehicle?.vehicleType, helperCount, pickup, drop, selectedVehicleType]);
 
   // Fetch fare estimate on mount
   useEffect(() => {
@@ -108,7 +129,7 @@ const FareEstimate = () => {
             drop: drop || '',
             pickupCoords,
             dropCoords,
-            vehicleType: vehicle?.id || 'bike',
+            vehicleType: selectedVehicleType,
             fare: (estimateData?.estimated_fare || 0) + (helperCost || 0),
             showBookingSuccess,
             paymentMethod,
@@ -234,8 +255,9 @@ const FareEstimate = () => {
           longitude: dropCoords.longitude,
           address: drop || '',
         },
-        vehicle_type: vehicle?.id || 'bike',
+        vehicle_type: selectedVehicleType,
         booking_type: 'instant' as const,
+        number_of_helpers: helperCount || 0,
       };
 
       const bookingResponse = await vehicleApi.createBooking(bookingData);
@@ -249,7 +271,8 @@ const FareEstimate = () => {
         return;
       }
 
-      const bookingId = bookingResponse.data?.id;
+      const bookingId =
+        bookingResponse.data?.booking_id || bookingResponse.data?.id;
       const amount = (estimateData?.estimated_fare || 0) + (helperCost || 0);
 
       if (selectedPayment === 'online') {
@@ -340,6 +363,24 @@ const FareEstimate = () => {
       >
         {/* Route Card */}
         <View style={styles.card}>
+          <View style={styles.vehicleInfoRow}>
+            <Image
+              source={
+                vehicle?.vehicleType
+                  ? VEHICLE_IMAGES[vehicle.vehicleType.toLowerCase()]
+                  : VEHICLE_IMAGES.bike
+              }
+              style={styles.vehicleImage}
+              resizeMode="contain"
+            />
+            <View>
+              <Text style={styles.vehicleName}>
+                {vehicle?.name || 'Vehicle'}
+              </Text>
+              <Text style={styles.vehicleCapacity}>{vehicle?.capacity}</Text>
+            </View>
+          </View>
+
           <View style={styles.routeContainer}>
             <View style={styles.timelineContainer}>
               <View style={[styles.dot, styles.pickupDot]} />
@@ -568,7 +609,6 @@ const FareEstimate = () => {
               <Icon name="close" size={24} color="#1F2937" />
             </TouchableOpacity>
             <Text style={styles.paymentModalTitle}>Complete Payment</Text>
-            <View style={{ width: 24 }} />
           </View>
           {paymentModal?.html && (
             <WebView
@@ -607,8 +647,31 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
+    fontWeight: '700',
+    color: '#1F2937',
+  },
+  vehicleInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+    paddingBottom: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  vehicleImage: {
+    width: 60,
+    height: 40,
+    marginRight: 15,
+  },
+  vehicleName: {
+    fontSize: 16,
     fontWeight: '600',
-    color: '#111827',
+    color: '#1F2937',
+  },
+  vehicleCapacity: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginTop: 2,
   },
   headerButton: {
     padding: 8,
