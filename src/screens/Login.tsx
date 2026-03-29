@@ -127,7 +127,8 @@ const Login = () => {
 
                 <View style={styles.inputRow}>
                   <View style={styles.codeInput}>
-                    <Text style={styles.codeText}>{countryCode}</Text>
+                    {/* ── Indian flag emoji + country code ── */}
+                    <Text style={styles.codeText}>🇮🇳 {countryCode}</Text>
                   </View>
 
                   <View
@@ -188,6 +189,12 @@ const Login = () => {
                         style={styles.socialButton}
                         onPress={() => handleSocialLogin('Google')}
                       >
+                        {/* ── Google logo ── */}
+                        <Image
+                          source={require('../assets/images/google_logo1.png')}
+                          style={styles.socialLogo}
+                          resizeMode="contain"
+                        />
                         <Text style={styles.socialButtonText}>Google</Text>
                       </TouchableOpacity>
 
@@ -195,6 +202,12 @@ const Login = () => {
                         style={styles.socialButton}
                         onPress={() => handleSocialLogin('Apple')}
                       >
+                        {/* ── Apple logo ── */}
+                        <Image
+                          source={require('../assets/images/apple_logo1.png')}
+                          style={styles.socialLogo}
+                          resizeMode="contain"
+                        />
                         <Text style={styles.socialButtonText}>Apple</Text>
                       </TouchableOpacity>
                     </View>
@@ -406,12 +419,19 @@ const styles = StyleSheet.create({
   },
   socialButton: {
     flex: 1,
+    flexDirection: 'row',
     backgroundColor: '#FFFFFF',
     paddingVertical: scaleH(14),
     borderRadius: ms(12),
     alignItems: 'center',
+    justifyContent: 'center',
     borderWidth: 1,
     borderColor: '#E2E8F0',
+    gap: scaleW(8),
+  },
+  socialLogo: {
+    width: ms(20),
+    height: ms(20),
   },
   socialButtonText: {
     color: '#0F172A',
