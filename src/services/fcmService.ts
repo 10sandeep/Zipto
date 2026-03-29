@@ -20,18 +20,28 @@ function getMessaging(): any | null {
 export async function requestPermissionAndGetToken(): Promise<string | null> {
   try {
     const messaging = getMessaging();
-    if (!messaging) return null;
+    if (!messaging) {
+      console.log('[FCM] Firebase messaging module not available');
+      return null;
+    }
 
     const authStatus = await messaging().requestPermission();
+    console.log('[FCM] Auth status:', authStatus, '| AUTHORIZED:', messaging.AuthorizationStatus?.AUTHORIZED);
     const enabled =
-      authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
-      authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+      authStatus === messaging.AuthorizationStatus?.AUTHORIZED ||
+      authStatus === messaging.AuthorizationStatus?.PROVISIONAL ||
+      authStatus === 1; // fallback: Android always returns 1
 
-    if (!enabled) return null;
+    if (!enabled) {
+      console.log('[FCM] Permission not enabled, status:', authStatus);
+      return null;
+    }
 
     const token = await messaging().getToken();
+    console.log('[FCM] Got token:', token ? 'YES' : 'NO');
     return token ?? null;
-  } catch {
+  } catch (e: any) {
+    console.log('[FCM] requestPermissionAndGetToken error:', e?.message ?? e);
     return null;
   }
 }

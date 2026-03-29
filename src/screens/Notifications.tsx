@@ -67,19 +67,27 @@ const Notifications = () => {
   const navigation = useNavigation();
   const [notifications, setNotifications] = useState<CustomerNotification[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [clearing, setClearing] = useState(false);
   const mountedRef = useRef(true);
 
   const fetchNotifications = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const res = await notificationApi.getNotifications();
-      if (mountedRef.current && res?.data) {
-        setNotifications(res.data);
-        notificationApi.markAllRead().catch(() => {});
+      if (mountedRef.current) {
+        const raw = res?.data;
+        const list: CustomerNotification[] = Array.isArray(raw) ? raw : [];
+        setNotifications(list);
+        if (list.length > 0) {
+          notificationApi.markAllRead().catch(() => {});
+        }
       }
-    } catch {
-      // silently ignore — show empty state
+    } catch (err: any) {
+      if (mountedRef.current) {
+        setError(err?.response?.data?.message ?? err?.message ?? 'Failed to load notifications');
+      }
     } finally {
       if (mountedRef.current) {setLoading(false);}
     }
@@ -173,6 +181,17 @@ const Notifications = () => {
         {loading ? (
           <View style={styles.centered}>
             <ActivityIndicator size="large" color="#3B82F6" />
+          </View>
+        ) : error ? (
+          <View style={styles.emptyState}>
+            <View style={[styles.emptyIconWrap, {backgroundColor: '#FEF2F2'}]}>
+              <MaterialIcons name="error-outline" size={ms(56)} color="#EF4444" />
+            </View>
+            <Text style={[styles.emptyTitle, {color: '#EF4444'}]}>Failed to load</Text>
+            <Text style={styles.emptySubtitle}>{error}</Text>
+            <TouchableOpacity onPress={fetchNotifications} style={styles.retryBtn}>
+              <Text style={styles.retryText}>Try Again</Text>
+            </TouchableOpacity>
           </View>
         ) : notifications.length === 0 ? (
           <View style={styles.emptyState}>
@@ -338,6 +357,20 @@ const styles = StyleSheet.create({
     color: '#64748B',
     textAlign: 'center',
     lineHeight: fs(14) * 1.55,
+  },
+
+  retryBtn: {
+    marginTop: scaleH(16),
+    paddingHorizontal: scaleW(24),
+    paddingVertical: scaleH(10),
+    backgroundColor: '#3B82F6',
+    borderRadius: ms(8),
+  },
+  retryText: {
+    fontSize: fs(14),
+    fontWeight: '600',
+    color: '#FFFFFF',
+    fontFamily: 'Poppins-Regular',
   },
 
   // ── Notification card ──

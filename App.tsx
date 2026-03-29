@@ -30,9 +30,13 @@ function FcmInitializer() {
 
     const init = async () => {
       // 1. Request permission + register token
+      console.log('[FCM] Requesting permission and getting token...');
       const token = await requestPermissionAndGetToken();
+      console.log('[FCM] Token result:', token ? token.slice(0, 20) + '...' : 'NULL');
       if (token) {
-        notificationApi.registerFcmToken(token).catch(() => {});
+        notificationApi.registerFcmToken(token)
+          .then(() => console.log('[FCM] Token registered with backend ✅'))
+          .catch((e) => console.log('[FCM] Token registration failed ❌', e?.response?.data ?? e?.message));
       }
 
       // 2. Foreground messages — show a local alert or update notification badge
