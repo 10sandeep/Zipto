@@ -194,13 +194,7 @@ const Home = () => {
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.logoSection}>
-            <View style={styles.logoContainer}>
-              <Image
-                source={require('../assets/images/logo_zipto.png')}
-                style={styles.logoImage}
-                resizeMode="contain"
-              />
-            </View>
+           
             <Text style={styles.ziptoText}>Zipto</Text>
           </View>
 
@@ -367,7 +361,7 @@ const styles = StyleSheet.create({
   ziptoText: {
     fontSize: nf(isSmallScreen ? 16 : 18),
     fontWeight: 'bold',
-    fontFamily: 'Poppins-Regular',
+    fontFamily: 'Cocon-Regular',
     color: '#3B82F6',
   },
   walletButton: {
