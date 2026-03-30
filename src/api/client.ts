@@ -145,6 +145,58 @@ client.interceptors.response.use(
   }
 );
 
+export const walletApi = {
+  getWallet: async () => {
+    const response = await client.get('/customer/wallet');
+    return response.data;
+  },
+
+  getTransactions: async (page = 1, limit = 20) => {
+    const response = await client.get('/customer/wallet/transactions', {
+      params: { page, limit },
+    });
+    return response.data;
+  },
+
+  initiateAddMoney: async (amount: number) => {
+    const response = await client.post('/customer/wallet/add-money/initiate', { amount });
+    return response.data;
+  },
+
+  verifyAddMoney: async (payload: {
+    order_id: string;
+    payment_id: string;
+    signature: string;
+    amount: number;
+  }) => {
+    const response = await client.post('/customer/wallet/add-money/verify', payload);
+    return response.data;
+  },
+};
+
+export const notificationApi = {
+  registerFcmToken: async (token: string) => {
+    const response = await client.put('/notification/fcm-token', { token });
+    return response.data;
+  },
+
+  getNotifications: async () => {
+    const response = await client.get('/notification/customer');
+    // API returns { success, data: { success, data: [...notifications] }, timestamp }
+    return response.data?.data ?? response.data;
+  },
+
+  markAllRead: async () => {
+    const response = await client.post('/notification/customer/read-all');
+    return response.data;
+  },
+
+  clearAll: async () => {
+    const response = await client.delete('/notification/customer/clear');
+    return response.data;
+  },
+};
+
 export const authApi = {
   registerCustomer: async (phone: string) => {
     const response = await client.post('/auth/customer/register', {

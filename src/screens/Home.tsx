@@ -1,3 +1,5 @@
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { notificationApi } from '../api/client';
 import React, {
   useState,
   useRef,
@@ -146,6 +148,17 @@ const Home = () => {
 
   const { token, isAuthenticated } = useAuthStore();
   const colorScheme = useColorScheme();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (!isAuthenticated) {return;}
+    notificationApi.getNotifications()
+      .then(res => {
+        const list = Array.isArray(res?.data) ? res.data : [];
+        setUnreadCount(list.filter((n: any) => !n.read).length);
+      })
+      .catch(() => {});
+  }, [isAuthenticated, isFocused]);
   const defaultCenter: [number, number] = [85.8245, 20.2961];
 
   // Use night style only when it's actually night time (not just device dark mode)
@@ -303,6 +316,33 @@ const Home = () => {
             <Text style={styles.ziptoText}>Zipto</Text>
           </View>
 
+          <View style={styles.headerActions}>
+            <TouchableOpacity
+              onPress={() => navigation.navigate('Wallet')}
+              style={styles.headerIconBtn}
+              activeOpacity={0.7}
+            >
+              <MaterialIcons name="account-balance-wallet" size={sp(isSmallScreen ? 22 : 26)} color="#3B82F6" />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => {
+                setUnreadCount(0);
+                navigation.navigate('Notifications');
+              }}
+              style={styles.headerIconBtn}
+              activeOpacity={0.7}
+            >
+              <MaterialIcons name="notifications" size={sp(isSmallScreen ? 22 : 26)} color="#3B82F6" />
+              {unreadCount > 0 && (
+                <View style={styles.notifBadge}>
+                  <Text style={styles.notifBadgeText}>
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          </View>
           <TouchableOpacity
             onPress={() => navigation.navigate('Wallet')}
             style={styles.walletButton}
@@ -475,23 +515,38 @@ const styles = StyleSheet.create({
     fontFamily: 'Cocon-Regular',
     color: '#3B82F6',
   },
-  walletButton: {
+  headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: sp(6),
+    gap: sp(4),
+  },
+  headerIconBtn: {
+    width: sp(38),
+    height: sp(38),
+    borderRadius: sp(19),
     backgroundColor: '#EFF6FF',
-    paddingHorizontal: sp(isSmallScreen ? 10 : 14),
-    paddingVertical: sp(isSmallScreen ? 6 : 8),
-    borderRadius: sp(20),
+    justifyContent: 'center',
+    alignItems: 'center',
     borderWidth: 1,
     borderColor: '#BFDBFE',
-    flexShrink: 0,
+    position: 'relative',
   },
-  walletText: {
-    fontSize: nf(isSmallScreen ? 12 : 14),
-    fontWeight: '600',
-    fontFamily: 'Poppins-Regular',
-    color: '#3B82F6',
+  notifBadge: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    backgroundColor: '#EF4444',
+    borderRadius: 8,
+    minWidth: 16,
+    height: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 3,
+  },
+  notifBadgeText: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
 
   // ── Bottom container ─────────────────────────────────────────────────────────

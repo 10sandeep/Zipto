@@ -22,10 +22,10 @@ interface TabConfig {
 }
 
 const tabs: TabConfig[] = [
-  { name: 'Home', icon: 'home', label: 'Home' },
+  { name: 'Home',     icon: 'home',         label: 'Home' },
   { name: 'MyOrders', icon: 'receipt-long', label: 'My Orders' },
-  { name: 'Coins', icon: 'stars', label: 'Coins' },
-  { name: 'Profile', icon: 'person', label: 'Profile' },
+  { name: 'Coins',    icon: 'stars',        label: 'Coins' },
+  { name: 'Profile',  icon: 'person',       label: 'Profile' },
 ];
 
 // Screens where the banner should NOT appear (they handle tracking themselves)
