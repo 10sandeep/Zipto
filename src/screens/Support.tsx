@@ -93,11 +93,6 @@ const badgeStyle = StyleSheet.create({
 const Support = () => {
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
 
-  const supportOptions = [
-    { id: 1, title: 'Live Chat',  icon: 'chat-bubble-outline', desc: 'Chat with our support team',   color: '#3B82F6', onPress: () => Alert.alert('Coming Soon', 'Live chat will be available in a future update.') },
-    { id: 2, title: 'Call Us',    icon: 'phone',               desc: '+91 90900 29996 (24×7)',       color: '#10B981', onPress: () => Linking.openURL('tel:+919090029996') },
-    { id: 3, title: 'Email Us',   icon: 'email',               desc: 'supportzipto@gmail.com',       color: '#F59E0B', onPress: () => Linking.openURL('mailto:supportzipto@gmail.com') },
-    { id: 4, title: 'WhatsApp',   icon: 'whatsapp',            desc: 'Message us on WhatsApp',       color: '#16A34A', onPress: () => Linking.openURL('https://wa.me/919090029996') },
   const contactOptions = [
     {
       id: 1, title: 'Live Chat',
@@ -186,22 +181,6 @@ const Support = () => {
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionLabel}>CONTACT CHANNELS</Text>
             </View>
-            <Text style={styles.supportTitle}>How can we help you?</Text>
-            <Text style={styles.supportSubtitle}>We're here 24×7 to assist you</Text>
-          </View>
-
-          {/* Contact Options */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Contact Us</Text>
-            {supportOptions.map(option => (
-              <TouchableOpacity
-                key={option.id}
-                style={styles.supportCard}
-                onPress={option.onPress}
-                activeOpacity={0.7}
-              >
-                <View style={[styles.cardIconContainer, { backgroundColor: `${option.color}15` }]}>
-                  <MaterialIcons name={option.icon} size={ms(28)} color={option.color} />
           </FadeInView>
 
           {/* ── Contact cards ── */}

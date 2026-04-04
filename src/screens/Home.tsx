@@ -1,12 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { notificationApi } from '../api/client';
-import React, {
-  useState,
-  useRef,
-  useEffect,
-  useMemo,
-  useCallback,
-} from 'react';
 import {
   View,
   StyleSheet,
@@ -612,6 +605,22 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Regular',
     color: '#64748B',
     textAlign: 'center',
+  },
+
+  walletButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#EFF6FF',
+    paddingHorizontal: sp(12),
+    paddingVertical: sp(6),
+    borderRadius: sp(20),
+    gap: sp(4),
+  },
+  walletText: {
+    fontSize: nf(13),
+    fontFamily: 'Poppins-Regular',
+    color: '#3B82F6',
+    fontWeight: '600',
   },
 
   // ── FAB ──────────────────────────────────────────────────────────────────────
