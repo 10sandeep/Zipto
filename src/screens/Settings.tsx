@@ -32,29 +32,93 @@ const fs = (size: number) =>
   Math.round(PixelRatio.roundToNearestPixel(ms(size)));
 // ─────────────────────────────────────────────────────────────────────────────
 
+// ─── Derived responsive values ────────────────────────────────────────────────
+const backBtnSize = ms(40);
+const descIndent  = ms(20) + scaleW(8);
+
+// ─── Reusable SwitchRow ───────────────────────────────────────────────────────
+const SwitchRow = ({
+  icon, iconColor, title, desc, value, onValueChange, disabled,
+}: {
+  icon: string; iconColor: string; title: string; desc: string;
+  value: boolean; onValueChange: (v: boolean) => void; disabled?: boolean;
+}) => (
+  <View style={[styles.settingItem, disabled && { opacity: 0.45 }]}>
+    <View style={styles.settingInfo}>
+      <View style={styles.settingHeader}>
+        <MaterialIcons name={icon} size={ms(20)} color={iconColor} />
+        <Text style={styles.settingTitle}>{title}</Text>
+      </View>
+      <Text style={styles.settingDesc}>{desc}</Text>
+    </View>
+    <Switch
+      value={value}
+      onValueChange={onValueChange}
+      trackColor={{ false: '#E2E8F0', true: '#93C5FD' }}
+      thumbColor={value ? '#3B82F6' : '#CBD5E1'}
+      disabled={disabled}
+    />
+  </View>
+);
+
+// ─── Reusable ChevronRow ──────────────────────────────────────────────────────
+const ChevronRow = ({
+  icon, iconColor, title, desc, titleColor, onPress,
+}: {
+  icon: string; iconColor: string; title: string; desc: string;
+  titleColor?: string; onPress?: () => void;
+}) => (
+  <TouchableOpacity style={styles.settingItem} onPress={onPress} activeOpacity={0.7}>
+    <View style={styles.settingInfo}>
+      <View style={styles.settingHeader}>
+        <MaterialIcons name={icon} size={ms(20)} color={iconColor} />
+        <Text style={[styles.settingTitle, titleColor ? { color: titleColor } : undefined]}>
+          {title}
+        </Text>
+      </View>
+      <Text style={styles.settingDesc}>{desc}</Text>
+    </View>
+    <MaterialIcons name="chevron-right" size={ms(24)} color="#94A3B8" />
+  </TouchableOpacity>
+);
+
+// ─── Component ────────────────────────────────────────────────────────────────
 const Settings = () => {
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
 
-  const [pushNotifications,    setPushNotifications]    = useState(true);
-  const [emailNotifications,   setEmailNotifications]   = useState(false);
-  const [smsNotifications,     setSmsNotifications]     = useState(true);
-  const [locationServices,     setLocationServices]     = useState(true);
-  const [shareDataForAnalytics,setShareDataForAnalytics]= useState(false);
-  const [darkMode,             setDarkMode]             = useState(false);
-  const [autoPlayVideos,       setAutoPlayVideos]       = useState(true);
+  // ── Order Notifications ──
+  const [orderUpdates,   setOrderUpdates]   = useState(true);
+  const [orderPickedUp,  setOrderPickedUp]  = useState(true);
+  const [orderDelivered, setOrderDelivered] = useState(true);
+  const [orderCancelled, setOrderCancelled] = useState(true);
 
-  const handleClearCache = () => {
-    Alert.alert(
-      'Clear Cache',
-      'Are you sure you want to clear app cache? This will free up storage space.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Clear', style: 'destructive', onPress: () => Alert.alert('Success', 'Cache cleared successfully!') },
-      ]
-    );
-  };
+  // ── Promotions & Offers ──
+  const [promotions,    setPromotions]    = useState(true);
+  const [specialOffers, setSpecialOffers] = useState(false);
+  const [newFeatures,   setNewFeatures]   = useState(false);
 
-  const handleChangePassword = () => Alert.alert('Coming Soon', 'Password change will be available in a future update.');
+  // ── Wallet & Payments ──
+  const [walletUpdates,     setWalletUpdates]     = useState(true);
+  const [paymentSuccessful, setPaymentSuccessful] = useState(true);
+  const [paymentFailed,     setPaymentFailed]     = useState(true);
+  const [cashbackReceived,  setCashbackReceived]  = useState(true);
+
+  // ── Alert Preferences ──
+  const [sound,     setSound]     = useState(true);
+  const [vibration, setVibration] = useState(true);
+
+
+  // ── Communication Channels ──
+  const [emailNotifications,    setEmailNotifications]    = useState(false);
+  const [smsNotifications,      setSmsNotifications]      = useState(true);
+  const [whatsappNotifications, setWhatsappNotifications] = useState(false);
+
+  // ── Privacy & Security ──
+  const [locationServices, setLocationServices] = useState(true);
+
+  // ── Handlers ──
+  const handleChangePassword = () =>
+    Alert.alert('Coming Soon', 'Password change will be available in a future update.');
 
   const handleDeleteAccount = () => {
     Alert.alert(
@@ -62,59 +126,19 @@ const Settings = () => {
       'Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently deleted.',
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete', style: 'destructive', onPress: () => Alert.alert('Request Submitted', 'Your account deletion request has been submitted. Our team will process it within 7 business days.') },
+        {
+          text: 'Delete', style: 'destructive',
+          onPress: () => Alert.alert('Request Submitted', 'Your account deletion request has been submitted. Our team will process it within 7 business days.'),
+        },
       ]
     );
   };
 
-  // ── Reusable row components ─────────────────────────────────────────────
-  const SwitchRow = ({
-    icon, iconColor, title, desc, value, onValueChange,
-  }: {
-    icon: string; iconColor: string; title: string; desc: string;
-    value: boolean; onValueChange: (v: boolean) => void;
-  }) => (
-    <View style={styles.settingItem}>
-      <View style={styles.settingInfo}>
-        <View style={styles.settingHeader}>
-          <MaterialIcons name={icon} size={ms(20)} color={iconColor} />
-          <Text style={styles.settingTitle}>{title}</Text>
-        </View>
-        <Text style={styles.settingDesc}>{desc}</Text>
-      </View>
-      <Switch
-        value={value}
-        onValueChange={onValueChange}
-        trackColor={{ false: '#E2E8F0', true: '#93C5FD' }}
-        thumbColor={value ? '#3B82F6' : '#CBD5E1'}
-      />
-    </View>
-  );
-
-  const ChevronRow = ({
-    icon, iconColor, title, desc, titleColor, onPress,
-  }: {
-    icon: string; iconColor: string; title: string; desc: string;
-    titleColor?: string; onPress?: () => void;
-  }) => (
-    <TouchableOpacity style={styles.settingItem} onPress={onPress} activeOpacity={0.7}>
-      <View style={styles.settingInfo}>
-        <View style={styles.settingHeader}>
-          <MaterialIcons name={icon} size={ms(20)} color={iconColor} />
-          <Text style={[styles.settingTitle, titleColor ? { color: titleColor } : undefined]}>
-            {title}
-          </Text>
-        </View>
-        <Text style={styles.settingDesc}>{desc}</Text>
-      </View>
-      <MaterialIcons name="chevron-right" size={ms(24)} color="#94A3B8" />
-    </TouchableOpacity>
-  );
-
   return (
     <View style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
-        {/* Header */}
+
+        {/* ── Header ── */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
             <MaterialIcons name="arrow-back" size={ms(24)} color="#0F172A" />
@@ -128,26 +152,141 @@ const Settings = () => {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
         >
-          {/* ── Notifications ── */}
+
+          {/* ── Info Banner ── */}
+          <View style={styles.infoCard}>
+            <MaterialIcons name="notifications-active" size={ms(24)} color="#3B82F6" />
+            <Text style={styles.infoText}>
+              Customize your notification preferences to stay updated on what matters most to you.
+            </Text>
+          </View>
+
+          {/* ── Order Notifications ── */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Notifications</Text>
+            <Text style={styles.sectionTitle}>Order Notifications</Text>
             <View style={styles.settingsCard}>
               <SwitchRow
-                icon="notifications" iconColor="#3B82F6"
-                title="Push Notifications" desc="Receive order updates and alerts"
-                value={pushNotifications} onValueChange={setPushNotifications}
+                icon="shopping-bag" iconColor="#3B82F6"
+                title="All Order Updates" desc="Status changes and updates"
+                value={orderUpdates} onValueChange={setOrderUpdates}
               />
               <View style={styles.settingDivider} />
               <SwitchRow
-                icon="email" iconColor="#10B981"
-                title="Email Notifications" desc="Promotional emails and updates"
+                icon="local-shipping" iconColor="#10B981"
+                title="Order Picked Up" desc="When delivery agent picks up"
+                value={orderPickedUp} onValueChange={setOrderPickedUp}
+                disabled={!orderUpdates}
+              />
+              <View style={styles.settingDivider} />
+              <SwitchRow
+                icon="check-circle" iconColor="#10B981"
+                title="Order Delivered" desc="When order is delivered"
+                value={orderDelivered} onValueChange={setOrderDelivered}
+                disabled={!orderUpdates}
+              />
+              <View style={styles.settingDivider} />
+              <SwitchRow
+                icon="cancel" iconColor="#EF4444"
+                title="Order Cancelled" desc="Cancellation confirmations"
+                value={orderCancelled} onValueChange={setOrderCancelled}
+                disabled={!orderUpdates}
+              />
+            </View>
+          </View>
+
+          {/* ── Promotions & Offers ── */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Promotions & Offers</Text>
+            <View style={styles.settingsCard}>
+              <SwitchRow
+                icon="local-offer" iconColor="#F59E0B"
+                title="Promotions" desc="Deals and discounts"
+                value={promotions} onValueChange={setPromotions}
+              />
+              <View style={styles.settingDivider} />
+              <SwitchRow
+                icon="card-giftcard" iconColor="#EC4899"
+                title="Special Offers" desc="Limited time offers"
+                value={specialOffers} onValueChange={setSpecialOffers}
+              />
+              <View style={styles.settingDivider} />
+              <SwitchRow
+                icon="new-releases" iconColor="#8B5CF6"
+                title="New Features" desc="App updates and features"
+                value={newFeatures} onValueChange={setNewFeatures}
+              />
+            </View>
+          </View>
+
+          {/* ── Wallet & Payments ── */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Wallet & Payments</Text>
+            <View style={styles.settingsCard}>
+              <SwitchRow
+                icon="account-balance-wallet" iconColor="#3B82F6"
+                title="Wallet Updates" desc="Money added or deducted"
+                value={walletUpdates} onValueChange={setWalletUpdates}
+              />
+              <View style={styles.settingDivider} />
+              <SwitchRow
+                icon="check-circle" iconColor="#10B981"
+                title="Payment Successful" desc="Payment confirmations"
+                value={paymentSuccessful} onValueChange={setPaymentSuccessful}
+              />
+              <View style={styles.settingDivider} />
+              <SwitchRow
+                icon="error" iconColor="#EF4444"
+                title="Payment Failed" desc="Failed payment alerts"
+                value={paymentFailed} onValueChange={setPaymentFailed}
+              />
+              <View style={styles.settingDivider} />
+              <SwitchRow
+                icon="stars" iconColor="#F59E0B"
+                title="Cashback Received" desc="Cashback credit notifications"
+                value={cashbackReceived} onValueChange={setCashbackReceived}
+              />
+            </View>
+          </View>
+
+          {/* ── Alert Preferences ── */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Alert Preferences</Text>
+            <View style={styles.settingsCard}>
+              <SwitchRow
+                icon="volume-up" iconColor="#3B82F6"
+                title="Sound" desc="Play notification sound"
+                value={sound} onValueChange={setSound}
+              />
+              <View style={styles.settingDivider} />
+              <SwitchRow
+                icon="vibration" iconColor="#10B981"
+                title="Vibration" desc="Vibrate on notifications"
+                value={vibration} onValueChange={setVibration}
+              />
+
+            </View>
+          </View>
+
+          {/* ── Communication Channels ── */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Communication Channels</Text>
+            <View style={styles.settingsCard}>
+              <SwitchRow
+                icon="email" iconColor="#3B82F6"
+                title="Email" desc="Receive updates via email"
                 value={emailNotifications} onValueChange={setEmailNotifications}
               />
               <View style={styles.settingDivider} />
               <SwitchRow
-                icon="sms" iconColor="#F59E0B"
-                title="SMS Notifications" desc="Important order alerts via SMS"
+                icon="sms" iconColor="#10B981"
+                title="SMS" desc="Receive SMS alerts"
                 value={smsNotifications} onValueChange={setSmsNotifications}
+              />
+              <View style={styles.settingDivider} />
+              <SwitchRow
+                icon="whatsapp" iconColor="#16A34A"
+                title="WhatsApp" desc="Updates on WhatsApp"
+                value={whatsappNotifications} onValueChange={setWhatsappNotifications}
               />
             </View>
           </View>
@@ -162,10 +301,17 @@ const Settings = () => {
                 value={locationServices} onValueChange={setLocationServices}
               />
               <View style={styles.settingDivider} />
-              <SwitchRow
-                icon="analytics" iconColor="#8B5CF6"
-                title="Share Analytics Data" desc="Help us improve the app"
-                value={shareDataForAnalytics} onValueChange={setShareDataForAnalytics}
+              <ChevronRow
+                icon="lock-outline" iconColor="#3B82F6"
+                title="Change Password" desc="Update your password"
+                onPress={handleChangePassword}
+              />
+              <View style={styles.settingDivider} />
+              <ChevronRow
+                icon="delete-forever" iconColor="#EF4444"
+                title="Delete Account" desc="Permanently delete your account"
+                titleColor="#EF4444"
+                onPress={handleDeleteAccount}
               />
             </View>
           </View>
@@ -174,46 +320,9 @@ const Settings = () => {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>App Preferences</Text>
             <View style={styles.settingsCard}>
-              <SwitchRow
-                icon="dark-mode" iconColor="#64748B"
-                title="Dark Mode" desc="Switch to dark theme"
-                value={darkMode} onValueChange={setDarkMode}
-              />
-              <View style={styles.settingDivider} />
-              <SwitchRow
-                icon="play-circle-outline" iconColor="#EC4899"
-                title="Auto-play Videos" desc="Auto-play promotional videos"
-                value={autoPlayVideos} onValueChange={setAutoPlayVideos}
-              />
-              <View style={styles.settingDivider} />
               <ChevronRow
                 icon="language" iconColor="#0EA5E9"
                 title="Language" desc="English (US)"
-              />
-            </View>
-          </View>
-
-          {/* ── Account ── */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Account</Text>
-            <View style={styles.settingsCard}>
-              <ChevronRow
-                icon="lock-outline" iconColor="#3B82F6"
-                title="Change Password" desc="Update your password"
-                onPress={handleChangePassword}
-              />
-              <View style={styles.settingDivider} />
-              <ChevronRow
-                icon="cleaning-services" iconColor="#F59E0B"
-                title="Clear Cache" desc="Free up storage space"
-                onPress={handleClearCache}
-              />
-              <View style={styles.settingDivider} />
-              <ChevronRow
-                icon="delete-forever" iconColor="#EF4444"
-                title="Delete Account" desc="Permanently delete your account"
-                titleColor="#EF4444"
-                onPress={handleDeleteAccount}
               />
             </View>
           </View>
@@ -226,16 +335,12 @@ const Settings = () => {
               <Text style={styles.appInfoVersion}>Zipto v1.0.0 (Build 100)</Text>
             </View>
           </View>
+
         </ScrollView>
       </SafeAreaView>
     </View>
   );
 };
-
-// ─── Derived responsive values ────────────────────────────────────────────────
-const backBtnSize   = ms(40);
-// settingDesc indented to align with title text: icon size + gap
-const descIndent    = ms(20) + scaleW(8);
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFC' },
@@ -268,8 +373,26 @@ const styles = StyleSheet.create({
   },
   placeholder: { width: backBtnSize },
 
-  scrollView: { flex: 1 },
+  scrollView:    { flex: 1 },
   scrollContent: { padding: scaleW(16) },
+
+  // ── Info Banner ──
+  infoCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: '#EFF6FF',
+    padding: ms(14),
+    borderRadius: ms(12),
+    gap: scaleW(12),
+    marginBottom: scaleH(24),
+  },
+  infoText: {
+    flex: 1,
+    fontSize: fs(13),
+    fontFamily: 'Poppins-Regular',
+    color: '#1E40AF',
+    lineHeight: fs(13) * 1.55,
+  },
 
   // ── Section ──
   section: { marginBottom: scaleH(24) },
@@ -318,7 +441,7 @@ const styles = StyleSheet.create({
     fontSize: fs(13),
     fontFamily: 'Poppins-Regular',
     color: '#64748B',
-    marginLeft: descIndent,   // aligns under title text, not icon
+    marginLeft: descIndent,
   },
   settingDivider: {
     height: 1,
@@ -326,7 +449,7 @@ const styles = StyleSheet.create({
     marginLeft: scaleW(16),
   },
 
-  // ── App info ──
+  // ── App Info ──
   appInfoCard: {
     flexDirection: 'row',
     alignItems: 'center',

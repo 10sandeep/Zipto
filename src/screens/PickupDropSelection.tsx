@@ -14,6 +14,7 @@ import {
   Image,
   Dimensions,
   PixelRatio,
+  Platform,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
@@ -22,18 +23,19 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { googleMapsApi as mapboxApi } from '../api/googleMaps';
 import { useAuthStore } from '../store/useAuthStore';
 
-const PICKUP_CACHE_KEY = 'pickup_location_cache';
-const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
-const LOCATION_CHANGE_THRESHOLD_M = 200; // metres
+// ─── Constants ────────────────────────────────────────────────────────────────
+const PICKUP_CACHE_KEY          = 'pickup_location_cache';
+const CACHE_TTL_MS              = 24 * 60 * 60 * 1000;
+const LOCATION_CHANGE_THRESHOLD_M = 200;
 
 function haversineDistance(
   lat1: number, lon1: number,
   lat2: number, lon2: number,
 ): number {
-  const R = 6371000;
+  const R     = 6371000;
   const toRad = (x: number) => (x * Math.PI) / 180;
-  const dLat = toRad(lat2 - lat1);
-  const dLon = toRad(lon2 - lon1);
+  const dLat  = toRad(lat2 - lat1);
+  const dLon  = toRad(lon2 - lon1);
   const a =
     Math.sin(dLat / 2) ** 2 +
     Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
@@ -42,32 +44,44 @@ function haversineDistance(
 
 // ─── Responsive helpers ───────────────────────────────────────────────────────
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-
 const BASE_WIDTH  = 390;
 const BASE_HEIGHT = 844;
-
 const scaleW = (size: number) => (SCREEN_WIDTH / BASE_WIDTH) * size;
 const scaleH = (size: number) => (SCREEN_HEIGHT / BASE_HEIGHT) * size;
+const ms     = (size: number, factor = 0.45) => size + (scaleW(size) - size) * factor;
+const fs     = (size: number) => Math.round(PixelRatio.roundToNearestPixel(ms(size)));
 
-const ms = (size: number, factor = 0.45) =>
-  size + (scaleW(size) - size) * factor;
+// ─── Design tokens ────────────────────────────────────────────────────────────
+const C = {
+  bg:            '#F0F4FF',
+  surface:       '#FFFFFF',
+  surfaceAlt:    '#F7F9FF',
+  primary:       '#3B82F6',
+  primaryDark:   '#1D4ED8',
+  primaryLight:  '#EFF6FF',
+  primaryMid:    '#DBEAFE',
+  green:         '#10B981',
+  greenLight:    '#ECFDF5',
+  red:           '#EF4444',
+  redLight:      '#FEF2F2',
+  amber:         '#F59E0B',
+  text:          '#0F172A',
+  textSub:       '#475569',
+  textMuted:     '#94A3B8',
+  border:        '#E2E8F0',
+  borderFocus:   '#93C5FD',
+  shadow:        '#0F172A',
+};
 
-const fs = (size: number) =>
-  Math.round(PixelRatio.roundToNearestPixel(ms(size)));
-// ─────────────────────────────────────────────────────────────────────────────
-
+// ─── Types ────────────────────────────────────────────────────────────────────
 type Location = {
   id: string;
   name: string;
   address: string;
   center?: [number, number];
-  metadata?: {
-    place_id?: string;
-    feature_type?: string;
-  };
+  metadata?: { place_id?: string; feature_type?: string };
 };
-
-type CityName = string;
+type CityName    = string;
 type LocationType = 'Home' | 'Shop' | 'Office' | 'Other';
 
 const CITIES: CityName[] = [
@@ -75,13 +89,102 @@ const CITIES: CityName[] = [
   'Sambalpur', 'Rourkela', 'Balasore', 'Baripada',
   'Bhadrak', 'Jharsuguda',
 ];
-
 const LOCATION_TYPES: LocationType[] = ['Home', 'Shop', 'Office', 'Other'];
 
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+/** Thin horizontal section divider with label */
+const SectionLabel = ({ label, icon, iconColor = C.primary }: { label: string; icon: string; iconColor?: string }) => (
+  <View style={sub.sectionLabel}>
+    <View style={[sub.sectionIconBox, { backgroundColor: iconColor + '18' }]}>
+      <MaterialIcons name={icon} size={ms(15)} color={iconColor} />
+    </View>
+    <Text style={sub.sectionLabelText}>{label}</Text>
+  </View>
+);
+
+/** Styled text input with left icon */
+const FieldInput = ({
+  icon, placeholder, value, onChangeText, keyboardType, maxLength, rightNode,
+}: {
+  icon: string;
+  placeholder: string;
+  value: string;
+  onChangeText: (t: string) => void;
+  keyboardType?: any;
+  maxLength?: number;
+  rightNode?: React.ReactNode;
+}) => {
+  const [focused, setFocused] = useState(false);
+  return (
+    <View style={[sub.fieldWrap, focused && sub.fieldWrapFocused]}>
+      <MaterialIcons name={icon} size={ms(18)} color={focused ? C.primary : C.textMuted} style={sub.fieldIcon} />
+      <TextInput
+        style={sub.fieldInput}
+        placeholder={placeholder}
+        placeholderTextColor={C.textMuted}
+        value={value}
+        onChangeText={onChangeText}
+        keyboardType={keyboardType}
+        maxLength={maxLength}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+      />
+      {rightNode}
+    </View>
+  );
+};
+
+const sub = StyleSheet.create({
+  sectionLabel: {
+    flexDirection:  'row',
+    alignItems:     'center',
+    gap:            scaleW(8),
+    marginBottom:   scaleH(14),
+    marginTop:      scaleH(4),
+  },
+  sectionIconBox: {
+    width:          ms(28),
+    height:         ms(28),
+    borderRadius:   ms(8),
+    justifyContent: 'center',
+    alignItems:     'center',
+  },
+  sectionLabelText: {
+    fontSize:      fs(14),
+    fontWeight:    '700',
+    color:         C.text,
+    letterSpacing: 0.1,
+  },
+  fieldWrap: {
+    flexDirection:     'row',
+    alignItems:        'center',
+    backgroundColor:   C.surfaceAlt,
+    borderRadius:      ms(12),
+    borderWidth:       1.5,
+    borderColor:       C.border,
+    paddingHorizontal: scaleW(14),
+    marginBottom:      scaleH(10),
+  },
+  fieldWrapFocused: {
+    borderColor:     C.borderFocus,
+    backgroundColor: C.primaryLight,
+  },
+  fieldIcon:  { marginRight: scaleW(10) },
+  fieldInput: {
+    flex:            1,
+    fontSize:        fs(14),
+    color:           C.text,
+    paddingVertical: scaleH(13),
+    fontWeight:      '500',
+  },
+});
+
+// ─── Main Component ───────────────────────────────────────────────────────────
 const PickupDropSelection = () => {
-  const navigation = useNavigation<any>();
-  const route = useRoute<any>();
-  const { user } = useAuthStore();
+  const navigation    = useNavigation<any>();
+  const route         = useRoute<any>();
+  const { user }      = useAuthStore();
   const serviceCategory = route.params?.serviceCategory || 'send_packages';
 
   const [pickup,               setPickup]               = useState('');
@@ -100,9 +203,8 @@ const PickupDropSelection = () => {
   const [customLocationName,   setCustomLocationName]   = useState('');
   const [pickupCoords,         setPickupCoords]         = useState<{ latitude: number; longitude: number } | null>(null);
   const [dropCoords,           setDropCoords]           = useState<{ latitude: number; longitude: number } | null>(null);
-
-  const [autoFillingPickup, setAutoFillingPickup] = useState(false);
-  const [locationChanged,   setLocationChanged]   = useState(false);
+  const [autoFillingPickup,    setAutoFillingPickup]    = useState(false);
+  const [locationChanged,      setLocationChanged]      = useState(false);
 
   const sessionTokenRef  = useRef(`session_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`);
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -111,12 +213,10 @@ const PickupDropSelection = () => {
   const slideAnim        = useRef(new Animated.Value(0)).current;
 
   useEffect(() => { setFilteredLocations([]); }, [selectedCity]);
-
   useEffect(() => {
     return () => { if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current); };
   }, []);
 
-  // Load cached pickup on mount
   useEffect(() => {
     (async () => {
       try {
@@ -136,7 +236,6 @@ const PickupDropSelection = () => {
     })();
   }, []);
 
-  // Watch GPS to detect if user has moved away from the cached pickup location
   useEffect(() => {
     if (!pickupCoords) {
       setLocationChanged(false);
@@ -149,31 +248,19 @@ const PickupDropSelection = () => {
     const id = Geolocation.watchPosition(
       position => {
         const { latitude, longitude } = position.coords;
-        const dist = haversineDistance(
-          latitude, longitude,
-          pickupCoords.latitude, pickupCoords.longitude,
-        );
+        const dist = haversineDistance(latitude, longitude, pickupCoords.latitude, pickupCoords.longitude);
         setLocationChanged(dist > LOCATION_CHANGE_THRESHOLD_M);
       },
       () => {},
       { enableHighAccuracy: false, timeout: 10000, maximumAge: 30000, distanceFilter: 50 },
     );
     watchIdRef.current = id;
-    return () => {
-      Geolocation.clearWatch(id);
-      watchIdRef.current = null;
-    };
+    return () => { Geolocation.clearWatch(id); watchIdRef.current = null; };
   }, [pickupCoords]);
 
-  const savePickupCache = async (
-    address: string,
-    coords: { latitude: number; longitude: number },
-  ) => {
+  const savePickupCache = async (address: string, coords: { latitude: number; longitude: number }) => {
     try {
-      await AsyncStorage.setItem(
-        PICKUP_CACHE_KEY,
-        JSON.stringify({ address, coords, cachedAt: Date.now() }),
-      );
+      await AsyncStorage.setItem(PICKUP_CACHE_KEY, JSON.stringify({ address, coords, cachedAt: Date.now() }));
     } catch {}
   };
 
@@ -197,27 +284,20 @@ const PickupDropSelection = () => {
           setAutoFillingPickup(false);
         }
       },
-      error => {
-        console.log('GPS error:', error);
-        setAutoFillingPickup(false);
-      },
+      error => { console.log('GPS error:', error); setAutoFillingPickup(false); },
       { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 },
     );
   };
 
-  // Auto-fill pickup location from current GPS position (only when city selected and pickup empty)
   useEffect(() => {
     if (!selectedCity) return;
-    // Only auto-fill if pickup is still empty (user hasn't typed anything / no cache hit)
     if (pickup) return;
     detectCurrentLocation();
   }, [selectedCity]);
 
   useEffect(() => {
     if (user?.name && !senderName.trim()) setSenderName(user.name);
-    if (user?.phone && !senderMobile.trim()) {
-      setSenderMobile(user.phone.replace(/\D/g, '').slice(-10));
-    }
+    if (user?.phone && !senderMobile.trim()) setSenderMobile(user.phone.replace(/\D/g, '').slice(-10));
   }, [user, senderName, senderMobile]);
 
   const handleCitySelect = (city: CityName) => {
@@ -231,46 +311,34 @@ const PickupDropSelection = () => {
         Alert.alert('Error', 'Invalid location data. Please try selecting again.');
         return;
       }
-      const fullLocationData = await mapboxApi.retrievePlace(
-        location.metadata.place_id!,
-        sessionTokenRef.current,
-      );
+      const fullLocationData = await mapboxApi.retrievePlace(location.metadata.place_id!, sessionTokenRef.current);
       if (!fullLocationData || !fullLocationData.center) {
         Alert.alert('Error', 'Could not get location coordinates. Please try again.');
         return;
       }
-      const fullAddress  = fullLocationData.name + ', ' + fullLocationData.address;
-      const coordinates  = {
-        latitude:  fullLocationData.center[1],
-        longitude: fullLocationData.center[0],
-      };
+      const fullAddress = fullLocationData.name + ', ' + fullLocationData.address;
+      const coordinates = { latitude: fullLocationData.center[1], longitude: fullLocationData.center[0] };
       if (activeInput === 'pickup') { setPickup(fullAddress);  setPickupCoords(coordinates); }
       else                          { setDrop(fullAddress);    setDropCoords(coordinates);   }
       setFilteredLocations([]);
       setActiveInput('' as 'pickup' | 'drop');
-      // Rotate session token after select — Google bills search+select as one session
       sessionTokenRef.current = `session_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
-    } catch (error) {
+    } catch {
       Alert.alert('Error', 'Failed to select location. Please try again.');
     }
   };
 
   const handleSearchCity = (text: string) => {
     setFilteredCities(
-      text.trim() === ''
-        ? CITIES
-        : CITIES.filter(c => c.toLowerCase().includes(text.toLowerCase())),
+      text.trim() === '' ? CITIES : CITIES.filter(c => c.toLowerCase().includes(text.toLowerCase())),
     );
   };
 
   const handleSearchLocation = async (text: string) => {
     if (activeInput === 'pickup') setPickup(text);
     else setDrop(text);
-
     if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
-
     if (text.trim().length < 2) { setFilteredLocations([]); setIsSearching(false); return; }
-
     setIsSearching(true);
     searchTimeoutRef.current = setTimeout(async () => {
       try {
@@ -293,7 +361,6 @@ const PickupDropSelection = () => {
     if (selectedLocationType === 'Other' && !customLocationName.trim()) { Alert.alert('Missing Information', 'Please enter custom location name');                                   return; }
     if (!pickupCoords)                                                   { Alert.alert('Invalid Pickup Location', 'Please select pickup location from the suggestions');              return; }
     if (!dropCoords)                                                     { Alert.alert('Invalid Drop Location', 'Please select drop location from the suggestions');                  return; }
-
     if (pickup && drop) {
       navigation.navigate('VehicleSelection', {
         pickup, drop, pickupCoords, dropCoords,
@@ -308,12 +375,9 @@ const PickupDropSelection = () => {
   };
 
   const canProceed =
-    pickup.trim() !== '' &&
-    drop.trim() !== '' &&
-    senderName.trim() !== '' &&
-    validateMobileNumber(senderMobile) &&
-    receiverName.trim() !== '' &&
-    validateMobileNumber(receiverMobile) &&
+    pickup.trim() !== '' && drop.trim() !== '' &&
+    senderName.trim() !== '' && validateMobileNumber(senderMobile) &&
+    receiverName.trim() !== '' && validateMobileNumber(receiverMobile) &&
     selectedLocationType !== '' &&
     (selectedLocationType !== 'Other' || customLocationName.trim() !== '');
 
@@ -326,112 +390,129 @@ const PickupDropSelection = () => {
     }
   };
 
+  // ── Suggestion List ───────────────────────────────────────────────────────
   const SuggestionList = ({ query }: { query: string }) => (
-    <View style={styles.suggestionsSection}>
-      <View style={styles.suggestionHeader}>
-        <Text style={styles.subSectionTitle}>Suggested Locations</Text>
-        {isSearching && <ActivityIndicator size="small" color="#3B82F6" />}
+    <View style={styles.suggestionBox}>
+      <View style={styles.suggestionTitleRow}>
+        <Text style={styles.suggestionTitle}>Suggestions</Text>
+        {isSearching && <ActivityIndicator size="small" color={C.primary} />}
       </View>
 
       {isSearching && filteredLocations.length === 0 && (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#3B82F6" />
-          <Text style={styles.loadingText}>Searching...</Text>
+        <View style={styles.suggestionLoading}>
+          <ActivityIndicator size="large" color={C.primary} />
+          <Text style={styles.suggestionLoadingText}>Searching locations…</Text>
         </View>
       )}
 
       {!isSearching && filteredLocations.length > 0 &&
-        filteredLocations.map(item => (
+        filteredLocations.map((item, idx) => (
           <TouchableOpacity
             key={item.id}
-            style={styles.locationCard}
+            style={[styles.suggestionRow, idx === filteredLocations.length - 1 && { borderBottomWidth: 0 }]}
             onPress={() => handleLocationSelect(item)}
             activeOpacity={0.7}
           >
-            <View style={styles.locationIconContainer}>
-              <MaterialIcons name="location-on" size={ms(18)} color="#3B82F6" />
+            <View style={styles.suggestionIconBox}>
+              <MaterialIcons name="place" size={ms(16)} color={C.primary} />
             </View>
-            <View style={styles.locationInfo}>
-              <Text style={styles.locationName}>{item.name}</Text>
-              <Text style={styles.locationAddress} numberOfLines={2}>{item.address}</Text>
+            <View style={styles.suggestionInfo}>
+              <Text style={styles.suggestionName} numberOfLines={1}>{item.name}</Text>
+              <Text style={styles.suggestionAddress} numberOfLines={1}>{item.address}</Text>
             </View>
-            <MaterialIcons name="north-west" size={ms(16)} color="#64748B" />
+            <MaterialIcons name="north-west" size={ms(14)} color={C.textMuted} />
           </TouchableOpacity>
         ))
       }
 
       {!isSearching && filteredLocations.length === 0 && query.trim().length > 2 && (
-        <View style={styles.emptyContainer}>
-          <MaterialIcons name="search-off" size={ms(40)} color="#94A3B8" />
-          <Text style={styles.emptyText}>No locations found for "{query}"</Text>
-          <Text style={styles.emptySubText}>Try a different search term</Text>
+        <View style={styles.suggestionEmpty}>
+          <MaterialIcons name="search-off" size={ms(36)} color={C.textMuted} />
+          <Text style={styles.suggestionEmptyText}>No results for "{query}"</Text>
+          <Text style={styles.suggestionEmptySub}>Try a different search term</Text>
         </View>
       )}
     </View>
   );
 
+  // ─────────────────────────────────────────────────────────────────────────
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
+
+      {/* ── Header ── */}
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => navigation.navigate('Home')}
-          style={styles.backButton}
+          style={styles.backBtn}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           activeOpacity={0.6}
         >
-          <MaterialIcons name="arrow-back" size={ms(24)} color="#1E293B" />
+          <MaterialIcons name="arrow-back" size={ms(20)} color={C.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Select Location</Text>
+        <View style={styles.headerText}>
+          <Text style={styles.headerTitle}>Select Location</Text>
+          <Text style={styles.headerSub}>Fill details to book your delivery</Text>
+        </View>
       </View>
 
-      <Animated.View style={[styles.content, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+      <Animated.View style={[styles.body, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
 
-        {/* ── City Selection ── */}
+        {/* ══════════════ CITY SELECTION ══════════════ */}
         {showCitySelection && !selectedCity && (
-          <View style={styles.citySelectionContainer}>
-            <Text style={styles.sectionTitle}>Select City</Text>
-            <View style={styles.searchContainer}>
-              <MaterialIcons name="search" size={ms(20)} color="#64748B" />
+          <View style={styles.cityScreen}>
+            <Text style={styles.screenHeading}>Where are you shipping?</Text>
+            <Text style={styles.screenSubHeading}>Select your city to get started</Text>
+
+            {/* Search bar */}
+            <View style={styles.citySearchBar}>
+              <MaterialIcons name="search" size={ms(18)} color={C.textMuted} />
               <TextInput
-                style={styles.searchInput}
-                placeholder="Search city..."
-                placeholderTextColor="#94A3B8"
+                style={styles.citySearchInput}
+                placeholder="Search city…"
+                placeholderTextColor={C.textMuted}
                 onChangeText={handleSearchCity}
               />
             </View>
+
             <FlatList
               data={filteredCities}
               keyExtractor={item => item}
               showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingBottom: scaleH(20) }}
               renderItem={({ item }) => (
                 <TouchableOpacity
-                  style={styles.cityCard}
+                  style={styles.cityRow}
                   onPress={() => handleCitySelect(item)}
                   activeOpacity={0.7}
                 >
-                  <View style={styles.cityIconContainer}>
-                    <MaterialIcons name="location-city" size={ms(24)} color="#3B82F6" />
+                  <View style={styles.cityRowIcon}>
+                    <MaterialIcons name="location-city" size={ms(20)} color={C.primary} />
                   </View>
-                  <Text style={styles.cityName}>{item}</Text>
-                  <MaterialIcons name="chevron-right" size={ms(24)} color="#64748B" />
+                  <Text style={styles.cityRowName}>{item}</Text>
+                  <View style={styles.cityRowChevron}>
+                    <MaterialIcons name="chevron-right" size={ms(18)} color={C.textMuted} />
+                  </View>
                 </TouchableOpacity>
               )}
             />
           </View>
         )}
 
-        {/* ── Location Inputs (after city selected) ── */}
+        {/* ══════════════ MAIN FORM ══════════════ */}
         {selectedCity && (
-          <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-
-            {/* City badge row */}
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>
-                Selected City: <Text style={styles.cityBadge}>{selectedCity}</Text>
-              </Text>
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={styles.formScroll}
+          >
+            {/* City pill + change */}
+            <View style={styles.cityPillRow}>
+              <View style={styles.cityPill}>
+                <MaterialIcons name="location-city" size={ms(13)} color={C.primary} />
+                <Text style={styles.cityPillText}>{selectedCity}</Text>
+              </View>
               <TouchableOpacity
-                style={styles.changeCityButton}
+                style={styles.changeCityBtn}
                 onPress={() => {
                   setSelectedCity('');
                   setShowCitySelection(true);
@@ -440,124 +521,108 @@ const PickupDropSelection = () => {
                   setFilteredLocations([]);
                 }}
               >
-                <Text style={styles.changeCityText}>Change City</Text>
+                <MaterialIcons name="edit" size={ms(12)} color={C.primary} />
+                <Text style={styles.changeCityText}>Change</Text>
               </TouchableOpacity>
             </View>
 
-            {/* Pickup & Drop */}
-            <View style={styles.locationsSection}>
-              <Text style={styles.sectionTitle}>Pickup & Drop Locations</Text>
+            {/* ── Route card ── */}
+            <View style={styles.card}>
+              <SectionLabel label="Pickup & Drop" icon="route" iconColor={C.primary} />
 
-              {/* Pickup input */}
-              <View style={styles.locationInputContainer}>
-                <View style={styles.inputIcon}>
-                  <View style={styles.pickupDot} />
+              {/* Pickup row */}
+              <View style={[styles.routeInputRow, activeInput === 'pickup' && styles.routeInputRowActive]}>
+                <View style={styles.routeDotCol}>
+                  <View style={styles.dotPickup} />
+                  <View style={styles.routeLine} />
                 </View>
                 <TextInput
-                  style={[styles.locationInput, activeInput === 'pickup' && styles.activeInput]}
-                  placeholder={autoFillingPickup ? 'Detecting your location...' : 'Enter pickup location *'}
-                  placeholderTextColor="#94A3B8"
+                  style={styles.routeInput}
+                  placeholder={autoFillingPickup ? 'Detecting your location…' : 'Pickup location *'}
+                  placeholderTextColor={C.textMuted}
                   value={pickup}
                   onChangeText={(text) => {
-                    // When user edits, clear auto-filled coords so they must pick from suggestions
                     if (pickupCoords) setPickupCoords(null);
                     handleSearchLocation(text);
                   }}
                   onFocus={() => setActiveInput('pickup')}
                 />
-                {autoFillingPickup && (
-                  <ActivityIndicator size="small" color="#3B82F6" style={{ marginLeft: scaleW(8) }} />
-                )}
-                {!autoFillingPickup && (!pickup || locationChanged) && (
+                {autoFillingPickup ? (
+                  <ActivityIndicator size="small" color={C.primary} />
+                ) : (!pickup || locationChanged) ? (
                   <TouchableOpacity
                     onPress={detectCurrentLocation}
+                    style={styles.locateBtn}
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   >
                     <MaterialIcons
                       name="my-location"
-                      size={ms(20)}
-                      color={locationChanged ? '#EF4444' : '#3B82F6'}
+                      size={ms(18)}
+                      color={locationChanged ? C.red : C.primary}
                     />
                   </TouchableOpacity>
-                )}
+                ) : null}
               </View>
-              {activeInput === 'pickup' && pickup.trim().length > 1 && (
-                <SuggestionList query={pickup} />
-              )}
 
-              {/* Drop input */}
-              <View style={[styles.locationInputContainer, { marginTop: scaleH(12) }]}>
-                <View style={styles.inputIcon}>
-                  <View style={styles.dropDot} />
+              {/* Drop row */}
+              <View style={[styles.routeInputRow, styles.routeInputRowDrop, activeInput === 'drop' && styles.routeInputRowActive]}>
+                <View style={styles.routeDotCol}>
+                  <View style={styles.dotDrop} />
                 </View>
                 <TextInput
-                  style={[styles.locationInput, activeInput === 'drop' && styles.activeInput]}
-                  placeholder="Enter drop location *"
-                  placeholderTextColor="#94A3B8"
+                  style={styles.routeInput}
+                  placeholder="Drop location *"
+                  placeholderTextColor={C.textMuted}
                   value={drop}
                   onChangeText={handleSearchLocation}
                   onFocus={() => setActiveInput('drop')}
                 />
               </View>
+
+              {/* Suggestions */}
+              {activeInput === 'pickup' && pickup.trim().length > 1 && (
+                <SuggestionList query={pickup} />
+              )}
               {activeInput === 'drop' && drop.trim().length > 1 && (
                 <SuggestionList query={drop} />
               )}
             </View>
 
-            {/* Sender Details */}
-            <View style={styles.senderDetailsSection}>
-              <View style={styles.sectionHeaderRow}>
-                <View style={styles.sectionIconContainer}>
-                  <MaterialIcons name="upload" size={ms(18)} color="#10B981" />
-                </View>
-                <Text style={styles.sectionTitle}>Sender Details</Text>
-              </View>
+            {/* ── Sender card ── */}
+            <View style={styles.card}>
+              <SectionLabel label="Sender Details" icon="upload" iconColor={C.green} />
 
-              <View style={styles.inputWrapper}>
-                <MaterialIcons name="person" size={ms(20)} color="#64748B" style={styles.inputIconLeft} />
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="Sender Name *"
-                  placeholderTextColor="#94A3B8"
-                  value={senderName}
-                  onChangeText={setSenderName}
-                />
-              </View>
+              <FieldInput
+                icon="person"
+                placeholder="Sender name *"
+                value={senderName}
+                onChangeText={setSenderName}
+              />
+              <FieldInput
+                icon="phone"
+                placeholder="Sender mobile *"
+                value={senderMobile}
+                onChangeText={text => setSenderMobile(text.replace(/\D/g, '').slice(0, 10))}
+                keyboardType="phone-pad"
+                maxLength={10}
+              />
 
-              <View style={styles.inputWrapper}>
-                <MaterialIcons name="phone" size={ms(20)} color="#64748B" style={styles.inputIconLeft} />
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="Sender Mobile Number *"
-                  placeholderTextColor="#94A3B8"
-                  value={senderMobile}
-                  onChangeText={text => setSenderMobile(text.replace(/\D/g, '').slice(0, 10))}
-                  keyboardType="phone-pad"
-                  maxLength={10}
-                />
-              </View>
-
-              <Text style={styles.subSectionTitle}>Save Location As *</Text>
-              <View style={styles.locationTypeContainer}>
+              {/* Location type */}
+              <Text style={styles.chipGroupLabel}>Save Location As *</Text>
+              <View style={styles.chipRow}>
                 {LOCATION_TYPES.map(type => (
                   <TouchableOpacity
                     key={type}
-                    style={[
-                      styles.locationTypeChip,
-                      selectedLocationType === type && styles.locationTypeChipActive,
-                    ]}
+                    style={[styles.chip, selectedLocationType === type && styles.chipActive]}
                     onPress={() => setSelectedLocationType(type)}
                     activeOpacity={0.7}
                   >
                     <MaterialIcons
                       name={getLocationIcon(type)}
-                      size={ms(18)}
-                      color={selectedLocationType === type ? '#FFFFFF' : '#64748B'}
+                      size={ms(14)}
+                      color={selectedLocationType === type ? '#FFFFFF' : C.textSub}
                     />
-                    <Text style={[
-                      styles.locationTypeText,
-                      selectedLocationType === type && styles.locationTypeTextActive,
-                    ]}>
+                    <Text style={[styles.chipText, selectedLocationType === type && styles.chipTextActive]}>
                       {type}
                     </Text>
                   </TouchableOpacity>
@@ -565,71 +630,53 @@ const PickupDropSelection = () => {
               </View>
 
               {selectedLocationType === 'Other' && (
-                <View style={styles.inputWrapper}>
-                  <MaterialIcons name="edit" size={ms(20)} color="#64748B" style={styles.inputIconLeft} />
-                  <TextInput
-                    style={styles.textInput}
-                    placeholder="Enter location name (e.g., Gym, Friend's Place) *"
-                    placeholderTextColor="#94A3B8"
-                    value={customLocationName}
-                    onChangeText={setCustomLocationName}
-                  />
-                </View>
+                <FieldInput
+                  icon="edit"
+                  placeholder="Custom location name *"
+                  value={customLocationName}
+                  onChangeText={setCustomLocationName}
+                />
               )}
             </View>
 
-            {/* Receiver Details */}
-            <View style={styles.receiverDetailsSection}>
-              <View style={styles.sectionHeaderRow}>
-                <View style={[styles.sectionIconContainer, styles.receiverIconContainer]}>
-                  <MaterialIcons name="download" size={ms(18)} color="#EF4444" />
-                </View>
-                <Text style={styles.sectionTitle}>Receiver Details</Text>
-              </View>
+            {/* ── Receiver card ── */}
+            <View style={[styles.card, { marginBottom: scaleH(8) }]}>
+              <SectionLabel label="Receiver Details" icon="download" iconColor={C.red} />
 
-              <View style={styles.inputWrapper}>
-                <MaterialIcons name="person-outline" size={ms(20)} color="#64748B" style={styles.inputIconLeft} />
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="Receiver Name *"
-                  placeholderTextColor="#94A3B8"
-                  value={receiverName}
-                  onChangeText={setReceiverName}
-                />
-              </View>
-
-              <View style={styles.inputWrapper}>
-                <MaterialIcons name="phone" size={ms(20)} color="#64748B" style={styles.inputIconLeft} />
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="Receiver Mobile Number *"
-                  placeholderTextColor="#94A3B8"
-                  value={receiverMobile}
-                  onChangeText={text => setReceiverMobile(text.replace(/\D/g, '').slice(0, 10))}
-                  keyboardType="phone-pad"
-                  maxLength={10}
-                />
-              </View>
+              <FieldInput
+                icon="person-outline"
+                placeholder="Receiver name *"
+                value={receiverName}
+                onChangeText={setReceiverName}
+              />
+              <FieldInput
+                icon="phone"
+                placeholder="Receiver mobile *"
+                value={receiverMobile}
+                onChangeText={text => setReceiverMobile(text.replace(/\D/g, '').slice(0, 10))}
+                keyboardType="phone-pad"
+                maxLength={10}
+              />
             </View>
           </ScrollView>
         )}
       </Animated.View>
 
-      {/* Footer */}
+      {/* ── Footer ── */}
       {selectedCity && (
         <View style={styles.footer}>
           <TouchableOpacity
-            style={[styles.continueButton, !canProceed && styles.continueButtonDisabled]}
+            style={[styles.continueBtn, !canProceed && styles.continueBtnDisabled]}
             onPress={navigateToBook}
             disabled={!canProceed}
-            activeOpacity={0.8}
+            activeOpacity={0.85}
           >
-            <Text style={[styles.continueButtonText, !canProceed && styles.continueButtonTextDisabled]}>
+            <Text style={[styles.continueBtnText, !canProceed && styles.continueBtnTextDisabled]}>
               Continue
             </Text>
             <Image
               source={require('../assets/images/arrow.png')}
-              style={[styles.arrowIcon, !canProceed && styles.arrowIconDisabled]}
+              style={[styles.arrowIcon, !canProceed && styles.arrowDisabled]}
               resizeMode="contain"
             />
           </TouchableOpacity>
@@ -639,360 +686,396 @@ const PickupDropSelection = () => {
   );
 };
 
-// ─── Derived responsive values ────────────────────────────────────────────────
-const backBtnSize      = ms(40);
-const cityIconContSize = ms(48);
-const locIconContSize  = ms(32);
-const dotSize          = ms(12);
-const inputIconWidth   = ms(24);
+// ─── Derived sizes ────────────────────────────────────────────────────────────
+const BACK_SIZE   = ms(40);
+const ARROW_SIZE  = ms(20);
+const DOT_SIZE    = ms(10);
+const GUTTER      = scaleW(16);
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFC' },
+  container: { flex: 1, backgroundColor: C.bg },
 
+  // ── Header ──
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: scaleW(16),
-    paddingTop: scaleH(20),
-    paddingBottom: scaleH(16),
-    backgroundColor: '#FFFFFF',
+    flexDirection:     'row',
+    alignItems:        'center',
+    paddingHorizontal: GUTTER,
+    paddingTop:        Platform.OS === 'ios' ? scaleH(6) : scaleH(14),
+    paddingBottom:     scaleH(14),
+    backgroundColor:   C.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
+    borderBottomColor: C.border,
+    gap:               scaleW(12),
   },
-  backButton: {
-    marginRight: scaleW(16),
-    width: backBtnSize,
-    height: backBtnSize,
-    borderRadius: backBtnSize / 2,
-    backgroundColor: '#F1F5F9',
-    justifyContent: 'center',
-    alignItems: 'center',
+  backBtn: {
+    width:           BACK_SIZE,
+    height:          BACK_SIZE,
+    borderRadius:    ms(12),
+    backgroundColor: C.bg,
+    justifyContent:  'center',
+    alignItems:      'center',
+    borderWidth:     1,
+    borderColor:     C.border,
+    flexShrink:      0,
   },
+  headerText:  { flex: 1 },
   headerTitle: {
-    fontSize: fs(20),
-    fontWeight: 'bold',
-    color: '#1E293B',
+    fontSize:      fs(18),
+    fontWeight:    '800',
+    color:         C.text,
+    letterSpacing: -0.2,
+  },
+  headerSub: {
+    fontSize:   fs(11),
+    color:      C.textMuted,
+    marginTop:  scaleH(1),
+    fontWeight: '500',
   },
 
-  content: { flex: 1 },
+  body: { flex: 1 },
 
-  citySelectionContainer: {
-    flex: 1,
-    paddingHorizontal: scaleW(20),
-    paddingTop: scaleH(20),
+  // ── City screen ──
+  cityScreen: {
+    flex:              1,
+    paddingHorizontal: GUTTER,
+    paddingTop:        scaleH(24),
   },
-  sectionTitle: {
-    fontSize: fs(16),
-    fontWeight: 'bold',
-    color: '#1E293B',
-    marginBottom: scaleH(14),
+  screenHeading: {
+    fontSize:      fs(22),
+    fontWeight:    '800',
+    color:         C.text,
+    letterSpacing: -0.4,
+    marginBottom:  scaleH(4),
   },
-  subSectionTitle: {
-    fontSize: fs(13),
-    fontWeight: '600',
-    color: '#475569',
-    marginBottom: scaleH(10),
-    marginTop: scaleH(4),
+  screenSubHeading: {
+    fontSize:     fs(13),
+    color:        C.textMuted,
+    marginBottom: scaleH(20),
+    fontWeight:   '500',
   },
-  sectionHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: scaleH(14),
-    gap: scaleW(10),
-  },
-  sectionIconContainer: {
-    width: ms(32),
-    height: ms(32),
-    borderRadius: ms(8),
-    backgroundColor: 'rgba(16, 185, 129, 0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  receiverIconContainer: {
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: ms(12),
-    paddingHorizontal: scaleW(16),
-    marginBottom: scaleH(16),
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: fs(14),
-    color: '#1E293B',
-    paddingVertical: scaleH(12),
-    marginLeft: scaleW(12),
-  },
-  cityCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: scaleW(16),
-    paddingVertical: scaleH(14),
-    marginBottom: scaleH(10),
-    borderRadius: ms(12),
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-  },
-  cityIconContainer: {
-    width: cityIconContSize,
-    height: cityIconContSize,
-    borderRadius: cityIconContSize / 2,
-    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: scaleW(16),
-    flexShrink: 0,
-  },
-  cityName: {
-    flex: 1,
-    fontSize: fs(15),
-    fontWeight: '600',
-    color: '#1E293B',
-  },
-
-  inputContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: scaleW(20),
-    paddingVertical: scaleH(12),
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
-  },
-  inputLabel:  { fontSize: fs(14), color: '#64748B' },
-  cityBadge:   { color: '#3B82F6', fontWeight: 'bold' },
-  changeCityButton: {
-    paddingVertical: scaleH(6),
-    paddingHorizontal: scaleW(12),
-    borderRadius: ms(6),
-    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-  },
-  changeCityText: { fontSize: fs(13), color: '#3B82F6', fontWeight: '600' },
-
-  locationsSection: {
-    paddingHorizontal: scaleW(20),
-    paddingTop: scaleH(20),
-    paddingBottom: scaleH(16),
-    backgroundColor: '#FFFFFF',
-    marginBottom: 2,
-  },
-  locationInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F8FAFC',
-    borderRadius: ms(12),
-    paddingHorizontal: scaleW(16),
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  inputIcon: {
-    width: inputIconWidth,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: scaleW(12),
-    flexShrink: 0,
-  },
-  pickupDot: {
-    width: dotSize,
-    height: dotSize,
-    borderRadius: dotSize / 2,
-    backgroundColor: '#10B981',
-  },
-  dropDot: {
-    width: dotSize,
-    height: dotSize,
-    borderRadius: dotSize / 2,
-    backgroundColor: '#EF4444',
-  },
-  locationInput: {
-    flex: 1,
-    fontSize: fs(14),
-    color: '#1E293B',
-    paddingVertical: scaleH(14),
-  },
-  activeInput: { color: '#1E293B' },
-
-  suggestionsSection: {
-    paddingHorizontal: scaleW(20),
-    paddingTop: scaleH(16),
-    paddingBottom: scaleH(100),
-  },
-  suggestionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: scaleH(10),
-  },
-  locationCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    padding: ms(12),
-    marginBottom: scaleH(8),
-    borderRadius: ms(10),
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-  },
-  locationIconContainer: {
-    width: locIconContSize,
-    height: locIconContSize,
-    borderRadius: locIconContSize / 2,
-    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: scaleW(10),
-    flexShrink: 0,
-  },
-  locationInfo:    { flex: 1 },
-  locationName: {
-    fontSize: fs(14),
-    fontWeight: '600',
-    color: '#1E293B',
-    marginBottom: scaleH(3),
-  },
-  locationAddress: { fontSize: fs(12), color: '#64748B' },
-  emptyContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: scaleH(50),
-  },
-  emptyText: {
-    fontSize: fs(14),
-    color: '#64748B',
-    marginTop: scaleH(12),
-    textAlign: 'center',
-  },
-  emptySubText: {
-    fontSize: fs(12),
-    color: '#94A3B8',
-    marginTop: scaleH(6),
-    textAlign: 'center',
-  },
-  loadingContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: scaleH(40),
-  },
-  loadingText: {
-    fontSize: fs(13),
-    color: '#64748B',
-    marginTop: scaleH(12),
-  },
-
-  senderDetailsSection: {
-    paddingHorizontal: scaleW(20),
-    paddingTop: scaleH(20),
-    paddingBottom: scaleH(16),
-    backgroundColor: '#FFFFFF',
-    marginBottom: 2,
-  },
-  receiverDetailsSection: {
-    paddingHorizontal: scaleW(20),
-    paddingTop: scaleH(20),
-    paddingBottom: scaleH(16),
-    backgroundColor: '#FFFFFF',
-    marginBottom: 2,
-  },
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F8FAFC',
-    borderRadius: ms(12),
-    paddingHorizontal: scaleW(16),
-    marginBottom: scaleH(12),
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  inputIconLeft: { marginRight: scaleW(12) },
-  textInput: {
-    flex: 1,
-    fontSize: fs(14),
-    color: '#1E293B',
-    paddingVertical: scaleH(12),
-  },
-  locationTypeContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: scaleW(10),
-    marginBottom: scaleH(12),
-  },
-  locationTypeChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  citySearchBar: {
+    flexDirection:     'row',
+    alignItems:        'center',
+    backgroundColor:   C.surface,
+    borderRadius:      ms(12),
     paddingHorizontal: scaleW(14),
-    paddingVertical: scaleH(10),
-    borderRadius: ms(20),
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    gap: scaleW(6),
+    marginBottom:      scaleH(14),
+    borderWidth:       1.5,
+    borderColor:       C.border,
+    gap:               scaleW(10),
+    elevation:         1,
+    shadowColor:       C.shadow,
+    shadowOffset:      { width: 0, height: 1 },
+    shadowOpacity:     0.04,
+    shadowRadius:      4,
   },
-  locationTypeChipActive: { backgroundColor: '#3B82F6', borderColor: '#3B82F6' },
-  locationTypeText: {
-    fontSize: fs(13),
+  citySearchInput: {
+    flex:            1,
+    fontSize:        fs(14),
+    color:           C.text,
+    paddingVertical: scaleH(12),
+    fontWeight:      '500',
+  },
+  cityRow: {
+    flexDirection:   'row',
+    alignItems:      'center',
+    backgroundColor: C.surface,
+    borderRadius:    ms(14),
+    paddingVertical: scaleH(14),
+    paddingHorizontal: scaleW(14),
+    marginBottom:    scaleH(8),
+    borderWidth:     1,
+    borderColor:     C.border,
+    elevation:       1,
+    shadowColor:     C.shadow,
+    shadowOffset:    { width: 0, height: 1 },
+    shadowOpacity:   0.04,
+    shadowRadius:    4,
+  },
+  cityRowIcon: {
+    width:           ms(40),
+    height:          ms(40),
+    borderRadius:    ms(10),
+    backgroundColor: C.primaryLight,
+    justifyContent:  'center',
+    alignItems:      'center',
+    marginRight:     scaleW(12),
+    flexShrink:      0,
+  },
+  cityRowName: {
+    flex:       1,
+    fontSize:   fs(15),
     fontWeight: '600',
-    color: '#64748B',
+    color:      C.text,
   },
-  locationTypeTextActive: { color: '#FFFFFF' },
+  cityRowChevron: {
+    width:           ms(28),
+    height:          ms(28),
+    borderRadius:    ms(8),
+    backgroundColor: C.bg,
+    justifyContent:  'center',
+    alignItems:      'center',
+  },
 
-  footer: {
-    paddingHorizontal: scaleW(20),
-    paddingTop: scaleH(16),
-    paddingBottom: scaleH(30),
-    backgroundColor: '#FFFFFF',
-    borderTopWidth: 1,
-    borderTopColor: '#E2E8F0',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 4,
+  // ── Form ──
+  formScroll: {
+    paddingHorizontal: GUTTER,
+    paddingTop:        scaleH(14),
+    paddingBottom:     scaleH(16),
+    gap:               scaleH(12),
   },
-  continueButton: {
-    backgroundColor: '#3B82F6',
-    borderRadius: ms(12),
-    paddingVertical: scaleH(16),
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
+
+  cityPillRow: {
+    flexDirection:  'row',
+    alignItems:     'center',
+    justifyContent: 'space-between',
+    marginBottom:   scaleH(2),
   },
-  continueButtonDisabled: { backgroundColor: '#E2E8F0' },
-  continueButtonText: {
-    fontSize: fs(15),
+  cityPill: {
+    flexDirection:     'row',
+    alignItems:        'center',
+    gap:               scaleW(5),
+    backgroundColor:   C.primaryLight,
+    borderRadius:      ms(20),
+    paddingHorizontal: scaleW(12),
+    paddingVertical:   scaleH(5),
+    borderWidth:       1,
+    borderColor:       C.primaryMid,
+  },
+  cityPillText: {
+    fontSize:   fs(12),
+    fontWeight: '700',
+    color:      C.primary,
+  },
+  changeCityBtn: {
+    flexDirection:     'row',
+    alignItems:        'center',
+    gap:               scaleW(4),
+    paddingHorizontal: scaleW(10),
+    paddingVertical:   scaleH(5),
+    borderRadius:      ms(8),
+    backgroundColor:   C.primaryLight,
+    borderWidth:       1,
+    borderColor:       C.primaryMid,
+  },
+  changeCityText: {
+    fontSize:   fs(12),
+    fontWeight: '700',
+    color:      C.primary,
+  },
+
+  // ── Card ──
+  card: {
+    backgroundColor: C.surface,
+    borderRadius:    ms(16),
+    padding:         ms(16),
+    borderWidth:     1,
+    borderColor:     C.border,
+    elevation:       2,
+    shadowColor:     C.shadow,
+    shadowOffset:    { width: 0, height: 2 },
+    shadowOpacity:   0.06,
+    shadowRadius:    8,
+  },
+
+  // ── Route inputs ──
+  routeInputRow: {
+    flexDirection:  'row',
+    alignItems:     'center',
+    paddingVertical: scaleH(4),
+  },
+  routeInputRowDrop: { paddingTop: scaleH(2) },
+  routeInputRowActive: {},
+  routeDotCol: {
+    alignItems:  'center',
+    width:       ms(24),
+    marginRight: scaleW(10),
+    flexShrink:  0,
+  },
+  dotPickup: {
+    width:           DOT_SIZE,
+    height:          DOT_SIZE,
+    borderRadius:    DOT_SIZE / 2,
+    backgroundColor: C.green,
+    borderWidth:     2,
+    borderColor:     C.greenLight,
+  },
+  dotDrop: {
+    width:           DOT_SIZE,
+    height:          DOT_SIZE,
+    borderRadius:    DOT_SIZE / 2,
+    backgroundColor: C.red,
+    borderWidth:     2,
+    borderColor:     C.redLight,
+  },
+  routeLine: {
+    width:           2,
+    height:          scaleH(28),
+    backgroundColor: C.border,
+    marginTop:       scaleH(3),
+  },
+  routeInput: {
+    flex:            1,
+    fontSize:        fs(13),
+    color:           C.text,
+    paddingVertical: scaleH(12),
+    paddingHorizontal: scaleW(10),
+    backgroundColor: C.surfaceAlt,
+    borderRadius:    ms(10),
+    borderWidth:     1.5,
+    borderColor:     C.border,
+    fontWeight:      '500',
+  },
+  locateBtn: {
+    marginLeft:      scaleW(8),
+    width:           ms(34),
+    height:          ms(34),
+    borderRadius:    ms(9),
+    backgroundColor: C.primaryLight,
+    justifyContent:  'center',
+    alignItems:      'center',
+    flexShrink:      0,
+  },
+
+  // ── Suggestions ──
+  suggestionBox: {
+    marginTop:       scaleH(10),
+    borderTopWidth:  1,
+    borderTopColor:  C.border,
+    paddingTop:      scaleH(10),
+  },
+  suggestionTitleRow: {
+    flexDirection:  'row',
+    justifyContent: 'space-between',
+    alignItems:     'center',
+    marginBottom:   scaleH(8),
+  },
+  suggestionTitle: {
+    fontSize:   fs(11),
+    fontWeight: '700',
+    color:      C.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+  },
+  suggestionRow: {
+    flexDirection:   'row',
+    alignItems:      'center',
+    paddingVertical: scaleH(10),
+    borderBottomWidth: 1,
+    borderBottomColor: C.bg,
+    gap:             scaleW(10),
+  },
+  suggestionIconBox: {
+    width:           ms(30),
+    height:          ms(30),
+    borderRadius:    ms(8),
+    backgroundColor: C.primaryLight,
+    justifyContent:  'center',
+    alignItems:      'center',
+    flexShrink:      0,
+  },
+  suggestionInfo:   { flex: 1 },
+  suggestionName: {
+    fontSize:   fs(13),
     fontWeight: '600',
-    color: '#FFFFFF',
-    marginRight: scaleW(8),
+    color:      C.text,
+    marginBottom: scaleH(1),
   },
-  continueButtonTextDisabled: { color: '#94A3B8' },
-  arrowIcon: {
-    width: ms(20),
-    height: ms(20),
-    marginLeft: scaleW(8),
-    tintColor: '#FFFFFF',
+  suggestionAddress: { fontSize: fs(11), color: C.textMuted },
+  suggestionLoading: {
+    alignItems:    'center',
+    paddingVertical: scaleH(24),
+    gap:           scaleH(8),
   },
-  arrowIconDisabled: { tintColor: '#94A3B8', opacity: 0.5 },
+  suggestionLoadingText: { fontSize: fs(12), color: C.textMuted },
+  suggestionEmpty: {
+    alignItems:    'center',
+    paddingVertical: scaleH(24),
+    gap:           scaleH(4),
+  },
+  suggestionEmptyText: { fontSize: fs(13), color: C.textSub, fontWeight: '500' },
+  suggestionEmptySub:  { fontSize: fs(12), color: C.textMuted },
+
+  // ── Form fields ──
+  chipGroupLabel: {
+    fontSize:     fs(12),
+    fontWeight:   '700',
+    color:        C.textSub,
+    marginBottom: scaleH(10),
+    marginTop:    scaleH(4),
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+  },
+  chipRow: {
+    flexDirection: 'row',
+    flexWrap:      'wrap',
+    gap:           scaleW(8),
+    marginBottom:  scaleH(12),
+  },
+  chip: {
+    flexDirection:     'row',
+    alignItems:        'center',
+    gap:               scaleW(5),
+    paddingHorizontal: scaleW(13),
+    paddingVertical:   scaleH(8),
+    borderRadius:      ms(20),
+    backgroundColor:   C.surfaceAlt,
+    borderWidth:       1.5,
+    borderColor:       C.border,
+  },
+  chipActive: {
+    backgroundColor: C.primary,
+    borderColor:     C.primaryDark,
+  },
+  chipText: {
+    fontSize:   fs(12),
+    fontWeight: '700',
+    color:      C.textSub,
+  },
+  chipTextActive: { color: '#FFFFFF' },
+
+  // ── Footer ──
+  footer: {
+    paddingHorizontal: GUTTER,
+    paddingTop:        scaleH(12),
+    paddingBottom:     Platform.OS === 'ios' ? scaleH(28) : scaleH(18),
+    backgroundColor:   C.surface,
+    borderTopWidth:    1,
+    borderTopColor:    C.border,
+    elevation:         8,
+    shadowColor:       C.shadow,
+    shadowOffset:      { width: 0, height: -3 },
+    shadowOpacity:     0.08,
+    shadowRadius:      8,
+  },
+  continueBtn: {
+    backgroundColor: C.primary,
+    borderRadius:    ms(14),
+    paddingVertical: scaleH(15),
+    flexDirection:   'row',
+    justifyContent:  'center',
+    alignItems:      'center',
+    gap:             scaleW(8),
+    elevation:       2,
+    shadowColor:     C.primaryDark,
+    shadowOffset:    { width: 0, height: 3 },
+    shadowOpacity:   0.25,
+    shadowRadius:    6,
+  },
+  continueBtnDisabled: {
+    backgroundColor: C.border,
+    elevation:       0,
+    shadowOpacity:   0,
+  },
+  continueBtnText: {
+    fontSize:      fs(15),
+    fontWeight:    '700',
+    color:         '#FFFFFF',
+    letterSpacing: 0.2,
+  },
+  continueBtnTextDisabled: { color: C.textMuted },
+  arrowIcon:    { width: ARROW_SIZE, height: ARROW_SIZE, tintColor: '#FFFFFF' },
+  arrowDisabled:{ tintColor: C.textMuted },
 });
 
 export default PickupDropSelection;

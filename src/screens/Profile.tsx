@@ -78,7 +78,6 @@ const Profile = () => {
       title: 'Preferences',
       items: [
         { id: 6,  title: 'Settings',            icon: 'settings',                 color: '#64748B', onPress: () => navigation.navigate('Settings') },
-        { id: 7,  title: 'Notifications',       icon: 'notifications',            color: '#EC4899', onPress: () => navigation.navigate('NotificationSettings') },
       ],
     },
     {

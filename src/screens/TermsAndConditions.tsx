@@ -55,7 +55,7 @@ const TermsAndConditions = () => {
             <Text style={styles.legalUpdate}>Last updated: January 15, 2026</Text>
 
             <Text style={styles.welcomeText}>
-              Welcome to Zipto. Please read these Terms and Conditions carefully before using our delivery services.
+              Welcome to zipto, Zipto is operated by (Zipto Hyperlogistics Pvt. Ltd).Please read these Terms and Conditions carefully before using our delivery services.
             </Text>
 
             <View style={styles.section}>
@@ -190,8 +190,8 @@ const TermsAndConditions = () => {
                 If you have any questions about these Terms, please contact us:
               </Text>
               <Text style={styles.contactText}>Email: legal@ridezipto.com</Text>
-              <Text style={styles.contactText}>Phone: +919090029996</Text>
-              <Text style={styles.contactText}>Address: Plot No-781, Maharishi College Rd, in front of DN Kingsland, Saheed Nagar, Bhubaneswar, Odisha, 751007</Text>
+              <Text style={styles.contactText}>Phone: +91 90900 29996</Text>
+              <Text style={styles.contactText}>Address: Bhubaneswar, Odisha, 751007</Text>
             </View>
 
             <View style={styles.acknowledgementCard}>

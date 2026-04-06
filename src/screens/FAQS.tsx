@@ -38,41 +38,171 @@ const FAQs = () => {
 
   const faqCategories = [
     {
-      category: 'Orders & Delivery',
+      category: '📦 Orders & Delivery',
       faqs: [
-        { id: 1, question: 'How do I track my order?', answer: 'You can track your order in real-time from the Orders section. Click on any active order to see live tracking on the map with the delivery agent\'s current location and estimated delivery time.' },
-        { id: 2, question: 'Can I cancel my order?', answer: 'Yes, you can cancel your order before it\'s picked up by the delivery agent. Go to Orders > Active Orders and select Cancel Order. If the order has already been picked up, cancellation may incur charges.' },
-        { id: 3, question: 'What are the delivery charges?', answer: 'Delivery charges vary based on distance and are calculated automatically. Typically ₹20-50 for deliveries within 5km. You\'ll see the exact charges before confirming your order.' },
+        {
+          id: 1,
+          question: 'How do I place an order?',
+          answer:
+            'To place an order, enter pickup and delivery locations, select your vehicle type, and confirm your booking. You\'ll get instant pricing before placing the order.',
+        },
+        {
+          id: 2,
+          question: 'How can I track my order?',
+          answer:
+            'You can track your delivery in real-time from the app. Once your order is assigned, you\'ll see live location updates of your delivery partner.',
+        },
+        {
+          id: 3,
+          question: 'How long does delivery take?',
+          answer:
+            'Delivery time depends on distance, traffic, and availability. Most deliveries are completed within a short time, and you\'ll see an estimated time before confirming.',
+        },
+        {
+          id: 4,
+          question: 'Can I cancel my order?',
+          answer:
+            'Yes, you can cancel your order before pickup without any charges. After pickup, cancellation charges may apply.',
+        },
+        {
+          id: 5,
+          question: 'What happens if I\'m not available at delivery?',
+          answer:
+            'If you\'re unavailable, the delivery partner will try to contact you. If unreachable, the order may be returned or cancelled.',
+        },
+        {
+          id: 6,
+          question: 'Can I contact the delivery partner?',
+          answer:
+            'Yes, once your order is confirmed, you\'ll be able to call or message the delivery partner directly from the app.',
+        },
+        {
+          id: 7,
+          question: 'What if my order is delayed?',
+          answer:
+            'Delays can happen due to traffic or weather. You can track your order live or contact support for assistance.',
+        },
+        {
+          id: 8,
+          question: 'What if my item is damaged or missing?',
+          answer:
+            'Please report the issue immediately through the app or support. We\'ll review and assist you as per our policy.',
+        },
       ],
     },
     {
-      category: 'Payment & Wallet',
+      category: '💰 Pricing & Payments',
       faqs: [
-        { id: 4, question: 'What payment methods are accepted?', answer: 'We accept Cash on Delivery, UPI, Credit/Debit Cards, Net Banking, and Wallet payments. You can also use your Zipto Wallet for instant payments and get cashback on orders.' },
-        { id: 5, question: 'How do I add money to my wallet?', answer: 'Go to Profile > Wallet and click on "Add Money". Enter the amount and choose your preferred payment method (UPI, Card, or Net Banking). Money will be credited instantly.' },
-        { id: 6, question: 'Is my payment information safe?', answer: 'Yes, absolutely! We use industry-standard encryption and secure payment gateways. Your card details are never stored on our servers and all transactions are PCI-DSS compliant.' },
+        {
+          id: 9,
+          question: 'What are the delivery charges?',
+          answer:
+            'Delivery charges depend on distance, time, and demand. You\'ll always see the final price before confirming your order.',
+        },
+        {
+          id: 10,
+          question: 'What payment methods are accepted?',
+          answer:
+            'We accept UPI, debit/credit cards, net banking, wallet balance, and cash on delivery (if available).',
+        },
+        {
+          id: 11,
+          question: 'How do I add money to my wallet?',
+          answer:
+            'You can add money through UPI, cards, or net banking directly from the wallet section in the app.',
+        },
+        {
+          id: 12,
+          question: 'Are there any hidden charges?',
+          answer:
+            'No. All charges are shown upfront before you confirm your order.',
+        },
+        {
+          id: 13,
+          question: 'How do refunds work?',
+          answer:
+            'Refunds are initiated within 24–48 hours after cancellation or issue resolution. The actual time depends on your bank or payment provider.',
+        },
       ],
     },
     {
-      category: 'Account & Settings',
+      category: '🔐 Safety & Security',
       faqs: [
-        { id: 7, question: 'How do I change my phone number?', answer: 'Go to Profile > Edit Profile and update your phone number. You\'ll receive an OTP on your new number for verification. Once verified, your number will be updated.' },
-        { id: 8, question: 'How do I delete my account?', answer: 'Go to Profile > Settings > Delete Account. Please note that deleting your account is permanent and all your data including order history and wallet balance will be lost.' },
-        { id: 9, question: 'How do I manage notifications?', answer: 'Go to Profile > Notification Settings to customize which notifications you want to receive. You can enable/disable order updates, promotions, and new feature announcements separately.' },
+        {
+          id: 14,
+          question: 'Is my payment information safe?',
+          answer:
+            'Yes, all payments are processed securely through trusted payment partners. We do not store your card details.',
+        },
+        {
+          id: 15,
+          question: 'Are delivery partners verified?',
+          answer:
+            'Yes, all delivery partners go through a verification and onboarding process before joining Zipto.',
+        },
+        {
+          id: 16,
+          question: 'Is my personal data safe?',
+          answer:
+            'We take your privacy seriously and protect your data using industry-standard security practices.',
+        },
       ],
     },
     {
-      category: 'Delivery Partners',
+      category: '👤 Account & Profile',
       faqs: [
-        { id: 10, question: 'How do I contact my delivery agent?', answer: 'Once your order is picked up, you\'ll see a call button on the tracking screen. Click it to directly call your delivery agent. The number is masked for privacy protection.' },
-        { id: 11, question: 'Can I tip the delivery agent?', answer: 'Yes! You can tip your delivery agent after the delivery is completed. Go to the order details and click "Add Tip". Tips go 100% to the delivery partner.' },
+        {
+          id: 17,
+          question: 'How do I change my phone number?',
+          answer:
+            'You can update your phone number from the profile settings or contact support for assistance.',
+        },
+        {
+          id: 18,
+          question: 'How do I delete my account?',
+          answer:
+            'You can request account deletion from settings or by contacting our support team.',
+        },
+        {
+          id: 19,
+          question: "I'm not receiving OTP, what should I do?",
+          answer:
+            'Please check your network, wait a few seconds, or try again. If the issue continues, contact support.',
+        },
       ],
     },
     {
-      category: 'Refunds & Issues',
+      category: '🚫 Restrictions & Policies',
       faqs: [
-        { id: 12, question: 'How long does a refund take?', answer: 'Refunds are processed within 24-48 hours of cancellation. For wallet payments, refund is instant. For card/UPI payments, it may take 5-7 business days depending on your bank.' },
-        { id: 13, question: 'What if my order is damaged?', answer: 'If your order arrives damaged, please report it immediately through the app. Go to Orders > Select Order > Report Issue. Upload photos and our support team will assist you with refund or replacement.' },
+        {
+          id: 20,
+          question: 'What items are not allowed?',
+          answer:
+            'We do not deliver illegal, hazardous, or prohibited items such as drugs, weapons, or unsafe materials.',
+        },
+        {
+          id: 21,
+          question: 'Can I send fragile items?',
+          answer:
+            'Yes, but proper packaging is required. Zipto is not responsible for damage due to poor packaging.',
+        },
+      ],
+    },
+    {
+      category: '📞 Support',
+      faqs: [
+        {
+          id: 22,
+          question: 'How can I contact Zipto support?',
+          answer:
+            'You can reach us via in-app chat, phone support, or email support.',
+        },
+        {
+          id: 23,
+          question: 'I still need help, what should I do?',
+          answer:
+            "If your question isn't listed here, please contact our support team. We're here to help!",
+        },
       ],
     },
   ];
@@ -80,6 +210,18 @@ const FAQs = () => {
   const toggleFaq = (id: number) => {
     setExpandedId(expandedId === id ? null : id);
   };
+
+  const filteredCategories = faqCategories
+    .map(category => ({
+      ...category,
+      faqs: category.faqs.filter(
+        faq =>
+          searchQuery.trim() === '' ||
+          faq.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          faq.answer.toLowerCase().includes(searchQuery.toLowerCase()),
+      ),
+    }))
+    .filter(category => category.faqs.length > 0);
 
   return (
     <View style={styles.container}>
@@ -124,7 +266,7 @@ const FAQs = () => {
           </View>
 
           {/* FAQ Categories */}
-          {faqCategories.map((category, categoryIndex) => (
+          {filteredCategories.map((category, categoryIndex) => (
             <View key={categoryIndex} style={styles.categorySection}>
               <Text style={styles.categoryTitle}>{category.category}</Text>
               {category.faqs.map(faq => (
@@ -155,6 +297,17 @@ const FAQs = () => {
             </View>
           ))}
 
+          {/* No results */}
+          {filteredCategories.length === 0 && (
+            <View style={styles.noResultsContainer}>
+              <MaterialIcons name="search-off" size={ms(48)} color="#CBD5E1" />
+              <Text style={styles.noResultsText}>No results found</Text>
+              <Text style={styles.noResultsSubText}>
+                Try a different keyword or contact support
+              </Text>
+            </View>
+          )}
+
           {/* Still Have Questions Card */}
           <View style={styles.helpCard}>
             <View style={styles.helpIconContainer}>
@@ -182,7 +335,6 @@ const FAQs = () => {
 const backBtnSize       = ms(40);
 const questionIconSize  = ms(36);
 const helpIconSize      = ms(72);
-// faqAnswer paddingLeft aligns with question text: questionIconSize + marginRight
 const answerPaddingLeft = questionIconSize + scaleW(10);
 
 const styles = StyleSheet.create({
@@ -313,6 +465,25 @@ const styles = StyleSheet.create({
     color: '#64748B',
     lineHeight: fs(14) * 1.6,
     paddingLeft: answerPaddingLeft,
+  },
+
+  // ── No Results ──
+  noResultsContainer: {
+    alignItems: 'center',
+    paddingVertical: scaleH(40),
+  },
+  noResultsText: {
+    fontSize: fs(16),
+    fontWeight: '600',
+    fontFamily: 'Poppins-Regular',
+    color: '#94A3B8',
+    marginTop: scaleH(12),
+  },
+  noResultsSubText: {
+    fontSize: fs(13),
+    fontFamily: 'Poppins-Regular',
+    color: '#CBD5E1',
+    marginTop: scaleH(4),
   },
 
   // ── Help Card ──

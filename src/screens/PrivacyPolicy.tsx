@@ -55,7 +55,7 @@ const PrivacyPolicy = () => {
             <Text style={styles.legalUpdate}>Last updated: January 15, 2026</Text>
 
             <Text style={styles.welcomeText}>
-              At Zipto, we take your privacy seriously. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our delivery services.
+              Welcome to zipto, Zipto is operated by (Zipto Hyperlogistics Pvt. Ltd). At Zipto, we take your privacy seriously. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our delivery services.
             </Text>
 
             <View style={styles.section}>
@@ -65,7 +65,7 @@ const PrivacyPolicy = () => {
               </Text>
               <Text style={styles.bulletText}>• Personal information (name, email address, phone number)</Text>
               <Text style={styles.bulletText}>• Delivery addresses (home, work, or other locations)</Text>
-              <Text style={styles.bulletText}>• Payment information (credit card details, UPI IDs, wallet information)</Text>
+              <Text style={styles.bulletText}>• Payment information (Payment information is processed securely by third-party payment providers. We do not store card details.)</Text>
               <Text style={styles.bulletText}>• Order history and preferences</Text>
               <Text style={styles.bulletText}>• Communication history with our support team</Text>
             </View>
@@ -73,7 +73,7 @@ const PrivacyPolicy = () => {
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>2. Location Data</Text>
               <Text style={styles.sectionText}>
-                With your permission, we collect precise or approximate location data from your mobile device to:
+               With your permission, Location data is only collected while the app is in use (or clearly specify if background tracking).
               </Text>
               <Text style={styles.bulletText}>• Provide accurate delivery services</Text>
               <Text style={styles.bulletText}>• Show nearby delivery options and estimated delivery times</Text>
@@ -206,8 +206,8 @@ const PrivacyPolicy = () => {
                 If you have any questions, concerns, or requests regarding this Privacy Policy or our data practices, please contact us:
               </Text>
               <Text style={styles.contactText}>Email: legal@ridezipto.com</Text>
-              <Text style={styles.contactText}>Phone: +919090029996</Text>
-              <Text style={styles.contactText}>Address: Plot No-781, Maharishi College Rd, in front of DN Kingsland, Saheed Nagar, Bhubaneswar, Odisha 751007</Text>
+              <Text style={styles.contactText}>Phone: +91 90900 29996</Text>
+              <Text style={styles.contactText}>Address:Bhubaneswar, Odisha 751007</Text>
             </View>
 
             <View style={styles.acknowledgementCard}>

@@ -16,6 +16,7 @@ import Profile from '../screens/Profile';
 import Coins from '../screens/Coins';
 import TransactionHistory from '../screens/TransactionHistory';
 import TransferToWallet from '../screens/TransferWallet';
+import WriteReview from '../screens/WriteReview';
 
 // Import all Profile-related screens
 import EditProfile from '../screens/EditProfile';
@@ -58,7 +59,7 @@ export type AppStackParamList = {
   Payment: undefined;
   BookingHistory: undefined;
   Profile: undefined;
-  MyOrders: undefined;
+  MyOrders: { filter?: 'completed' | 'active' | 'all' } | undefined;
   TrackOrder: { orderId: string };
   Wallet: undefined;
   Support: undefined;
@@ -75,6 +76,7 @@ export type AppStackParamList = {
   Coins: undefined;
   TransactionHistory: undefined;
   TransferToWallet: undefined;
+  WriteReview: undefined;
 };
 
 const Stack = createNativeStackNavigator<AppStackParamList>();
@@ -102,21 +104,30 @@ const AppNavigator = () => {
       <Stack.Screen name="LiveTracking" component={LiveTracking} />
       <Stack.Screen name="Payment" component={Payment} />
       <Stack.Screen name="BookingHistory" component={BookingHistory} />
-      
+
       {/* Profile Screen */}
       <Stack.Screen name="Profile" component={Profile} />
-      
+
       <Stack.Screen name="MyOrders" component={MyOrders} />
-      
+
       {/* Track Order Screen */}
-      <Stack.Screen 
-        name="TrackOrder" 
+      <Stack.Screen
+        name="TrackOrder"
         component={TrackOrder}
         options={{
           animation: 'slide_from_bottom',
         }}
       />
-      
+
+      {/* Write Review Screen */}
+      <Stack.Screen
+        name="WriteReview"
+        component={WriteReview}
+        options={{
+          animation: 'slide_from_right',
+        }}
+      />
+
       {/* Profile Menu Screens - Now using actual components */}
       <Stack.Screen
         name="EditProfile"
@@ -160,13 +171,13 @@ const AppNavigator = () => {
           animation: 'slide_from_right',
         }}
       />
-      <Stack.Screen
+      {/* <Stack.Screen
         name="NotificationSettings"
         component={NotificationSettings}
         options={{
           animation: 'slide_from_right',
         }}
-      />
+      /> */}
       <Stack.Screen
         name="TermsAndConditions"
         component={TermsAndConditions}
@@ -188,30 +199,30 @@ const AppNavigator = () => {
           animation: 'slide_from_right',
         }}
       />
-      
+
       <Stack.Screen
         name="Notifications"
         component={Notifications}
-        options={{animation: 'slide_from_right'}}
+        options={{ animation: 'slide_from_right' }}
       />
       <Stack.Screen
         name="ScheduleDelivery"
         component={() => <PlaceholderScreen name="ScheduleDelivery" />}
       />
-      
+
       {/* Coins Screen */}
       <Stack.Screen name="Coins" component={Coins} />
-      
+
       {/* Coins related screens */}
-      <Stack.Screen 
-        name="TransactionHistory" 
+      <Stack.Screen
+        name="TransactionHistory"
         component={TransactionHistory}
         options={{
           animation: 'slide_from_right',
         }}
       />
-      <Stack.Screen 
-        name="TransferToWallet" 
+      <Stack.Screen
+        name="TransferToWallet"
         component={TransferToWallet}
         options={{
           animation: 'slide_from_right',

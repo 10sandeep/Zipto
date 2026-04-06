@@ -39,12 +39,12 @@ const Coins = () => {
   const navigation =
     useNavigation<NativeStackNavigationProp<AppStackParamList>>();
 
-  const [coins, setCoins] = useState(0);
-  const [rupeeValue, setRupeeValue] = useState(0);
-  const [rate, setRate] = useState('');
+  const [coins, setCoins]               = useState(0);
+  const [rupeeValue, setRupeeValue]     = useState(0);
+  const [rate, setRate]                 = useState('');
   const [transactions, setTransactions] = useState<CoinTransaction[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading]           = useState(true);
+  const [refreshing, setRefreshing]     = useState(false);
   const [balanceError, setBalanceError] = useState(false);
 
   const fetchData = useCallback(async (isRefresh = false) => {
@@ -86,29 +86,29 @@ const Coins = () => {
 
   const formatDate = (dateStr: string) => {
     try {
-      const date = new Date(dateStr);
-      const day = date.getDate().toString().padStart(2, '0');
+      const date   = new Date(dateStr);
+      const day    = date.getDate().toString().padStart(2, '0');
       const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-      const month = months[date.getMonth()];
-      let hours = date.getHours();
-      const mins = date.getMinutes().toString().padStart(2, '0');
-      const ampm = hours >= 12 ? 'PM' : 'AM';
-      hours = hours % 12 || 12;
+      const month  = months[date.getMonth()];
+      let hours    = date.getHours();
+      const mins   = date.getMinutes().toString().padStart(2, '0');
+      const ampm   = hours >= 12 ? 'PM' : 'AM';
+      hours        = hours % 12 || 12;
       return `${day} ${month} • ${hours}:${mins} ${ampm}`;
     } catch { return dateStr; }
   };
 
   const getTransactionIcon = (type: string) => {
-    if (type === 'earned') return 'add-circle';
+    if (type === 'earned')                      return 'add-circle';
     if (type === 'redeemed' || type === 'spent') return 'remove-circle';
-    if (type === 'transferred') return 'swap-horiz';
+    if (type === 'transferred')                  return 'swap-horiz';
     return 'stars';
   };
 
   const getTransactionColor = (type: string) => {
-    if (type === 'earned') return '#10B981';
+    if (type === 'earned')                      return '#10B981';
     if (type === 'redeemed' || type === 'spent') return '#EF4444';
-    if (type === 'transferred') return '#F59E0B';
+    if (type === 'transferred')                  return '#F59E0B';
     return '#6366F1';
   };
 
@@ -125,16 +125,38 @@ const Coins = () => {
   ];
 
   const earnCoinsWays = [
-    { icon: 'local-shipping', text: 'Complete deliveries', coins: 'Per order', onPress: () => navigation.navigate('Home') },
     {
-      icon: 'share', text: 'Refer friends', coins: '+50',
+      icon: 'local-shipping',
+      text: 'Complete deliveries',
+      coins: 'Per order',
+      // ✅ Navigate to completed orders tab in MyOrders
+      onPress: () => navigation.navigate('MyOrders', { filter: 'completed' }),
+    },
+    {
+      icon: 'share',
+      text: 'Refer friends',
+      coins: '+50',
       onPress: () => {
         const { Share } = require('react-native');
-        Share.share({ message: 'Join Zipto and get 50 bonus coins! Download now: https://zipto.app/refer', title: 'Refer Zipto' });
+        Share.share({
+          message: 'Join Zipto and get 50 bonus coins! Download now: https://zipto.app/refer',
+          title: 'Refer Zipto',
+        });
       },
     },
-    { icon: 'star', text: 'Write reviews', coins: '+5', onPress: () => navigation.navigate('MyOrders') },
-    { icon: 'receipt-long', text: 'View transaction history', coins: 'All', onPress: () => navigation.navigate('TransactionHistory') },
+    {
+      icon: 'star',
+      text: 'Write reviews',
+      coins: '+5',
+      // ✅ Navigate to the new WriteReview screen
+      onPress: () => navigation.navigate('WriteReview'),
+    },
+    {
+      icon: 'receipt-long',
+      text: 'View transaction history',
+      coins: 'All',
+      onPress: () => navigation.navigate('TransactionHistory'),
+    },
   ];
 
   if (loading) {
@@ -241,7 +263,7 @@ const Coins = () => {
               </View>
               <View style={styles.transactionsCard}>
                 {transactions.slice(0, 5).map((tx, index) => {
-                  const color = getTransactionColor(tx.type);
+                  const color    = getTransactionColor(tx.type);
                   const isEarned = tx.type === 'earned';
                   return (
                     <React.Fragment key={tx.id}>
@@ -341,13 +363,13 @@ const Coins = () => {
 };
 
 // ─── Derived responsive values ────────────────────────────────────────────────
-const btnSize         = ms(40);
-const txIconSize      = ms(42);
-const optionIconSize  = ms(64);
-const earnIconSize    = ms(44);
-const decorCircle1Sz  = ms(120);
-const decorCircle2Sz  = ms(80);
-const decorCircle3Sz  = ms(60);
+const btnSize        = ms(40);
+const txIconSize     = ms(42);
+const optionIconSize = ms(64);
+const earnIconSize   = ms(44);
+const decorCircle1Sz = ms(120);
+const decorCircle2Sz = ms(80);
+const decorCircle3Sz = ms(60);
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFC' },
@@ -355,118 +377,114 @@ const styles = StyleSheet.create({
 
   // ── Header ──
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection:     'row',
+    alignItems:        'center',
+    justifyContent:    'space-between',
     paddingHorizontal: scaleW(16),
-    paddingVertical: scaleH(16),
-    backgroundColor: '#FFFFFF',
+    paddingVertical:   scaleH(16),
+    backgroundColor:   '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
   },
   backButton: {
-    width: btnSize,
-    height: btnSize,
-    borderRadius: btnSize / 2,
+    width:           btnSize,
+    height:          btnSize,
+    borderRadius:    btnSize / 2,
     backgroundColor: '#F1F5F9',
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent:  'center',
+    alignItems:      'center',
   },
-  headerTitle: { fontSize: fs(20), fontWeight: 'bold', color: '#0F172A' },
+  headerTitle:   { fontSize: fs(20), fontWeight: 'bold', color: '#0F172A' },
   historyButton: {
-    width: btnSize,
-    height: btnSize,
-    borderRadius: btnSize / 2,
+    width:           btnSize,
+    height:          btnSize,
+    borderRadius:    btnSize / 2,
     backgroundColor: '#EFF6FF',
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent:  'center',
+    alignItems:      'center',
   },
 
   // ── Loading ──
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  loadingText: { marginTop: scaleH(12), fontSize: fs(15), color: '#64748B' },
+  loadingText:      { marginTop: scaleH(12), fontSize: fs(15), color: '#64748B' },
 
   // ── Scroll ──
-  scrollView: { flex: 1 },
+  scrollView:    { flex: 1 },
   scrollContent: { paddingBottom: scaleH(100) },
 
   // ── Balance Card ──
   balanceCardContainer: { padding: scaleW(16) },
   balanceCard: {
-    borderRadius: ms(20),
-    padding: ms(24),
-    position: 'relative',
-    overflow: 'hidden',
-    minHeight: scaleH(180),
-    elevation: 8,
-    shadowColor: '#6366F1',
-    shadowOffset: { width: 0, height: 4 },
+    borderRadius:  ms(20),
+    padding:       ms(24),
+    position:      'relative',
+    overflow:      'hidden',
+    minHeight:     scaleH(180),
+    elevation:     8,
+    shadowColor:   '#6366F1',
+    shadowOffset:  { width: 0, height: 4 },
     shadowOpacity: 0.3,
-    shadowRadius: 8,
+    shadowRadius:  8,
   },
   coinsIconContainer: {
     position: 'absolute',
-    right: scaleW(20),
-    top: scaleH(20),
-    opacity: 0.3,
+    right:    scaleW(20),
+    top:      scaleH(20),
+    opacity:  0.3,
   },
-  balanceInfo: { zIndex: 1 },
-  balanceLabel: { fontSize: fs(14), color: '#E0E7FF', marginBottom: scaleH(8) },
-  balanceAmount: { fontSize: fs(48), fontWeight: 'bold', color: '#FFFFFF', marginBottom: scaleH(4) },
+  balanceInfo:    { zIndex: 1 },
+  balanceLabel:   { fontSize: fs(14), color: '#E0E7FF', marginBottom: scaleH(8) },
+  balanceAmount:  { fontSize: fs(48), fontWeight: 'bold', color: '#FFFFFF', marginBottom: scaleH(4) },
   balanceSubtext: { fontSize: fs(16), color: '#E0E7FF' },
   rateTag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    alignSelf: 'flex-start',
+    flexDirection:     'row',
+    alignItems:        'center',
+    backgroundColor:   'rgba(255,255,255,0.15)',
+    alignSelf:         'flex-start',
     paddingHorizontal: scaleW(10),
-    paddingVertical: scaleH(4),
-    borderRadius: ms(12),
-    marginTop: scaleH(12),
-    gap: scaleW(4),
-    zIndex: 1,
+    paddingVertical:   scaleH(4),
+    borderRadius:      ms(12),
+    marginTop:         scaleH(12),
+    gap:               scaleW(4),
+    zIndex:            1,
   },
   rateText: { fontSize: fs(12), color: '#E0E7FF', fontWeight: '500' },
 
   // ── Decor circles ──
-  decorCircle: {
-    position: 'absolute',
-    borderRadius: 100,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-  },
+  decorCircle:  { position: 'absolute', borderRadius: 100, backgroundColor: 'rgba(255,255,255,0.1)' },
   decorCircle1: { width: decorCircle1Sz, height: decorCircle1Sz, right: -scaleW(30), bottom: -scaleH(30) },
   decorCircle2: { width: decorCircle2Sz, height: decorCircle2Sz, right: scaleW(100), top: -scaleH(20) },
   decorCircle3: { width: decorCircle3Sz, height: decorCircle3Sz, left: -scaleW(20), bottom: scaleH(40) },
 
   // ── Transaction History Button ──
   transactionHistoryButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    padding: ms(16),
-    borderRadius: ms(12),
-    marginTop: scaleH(12),
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    flexDirection:  'row',
+    alignItems:     'center',
+    backgroundColor:'#FFFFFF',
+    padding:        ms(16),
+    borderRadius:   ms(12),
+    marginTop:      scaleH(12),
+    elevation:      2,
+    shadowColor:    '#000',
+    shadowOffset:   { width: 0, height: 1 },
+    shadowOpacity:  0.1,
+    shadowRadius:   2,
   },
   transactionHistoryText: {
-    flex: 1,
-    fontSize: fs(15),
-    fontWeight: '600',
-    color: '#0F172A',
-    marginLeft: scaleW(12),
+    flex:         1,
+    fontSize:     fs(15),
+    fontWeight:   '600',
+    color:        '#0F172A',
+    marginLeft:   scaleW(12),
   },
 
   // ── Section ──
-  section: { paddingHorizontal: scaleW(16), marginBottom: scaleH(24) },
+  section:       { paddingHorizontal: scaleW(16), marginBottom: scaleH(24) },
   sectionHeader: {
-    flexDirection: 'row',
+    flexDirection:  'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: scaleH(16),
+    alignItems:     'center',
+    marginBottom:   scaleH(16),
   },
   sectionTitle: { fontSize: fs(18), fontWeight: 'bold', color: '#0F172A', marginBottom: scaleH(16) },
   seeAllText:   { fontSize: fs(14), fontWeight: '600', color: '#6366F1', marginBottom: scaleH(16) },
@@ -474,72 +492,72 @@ const styles = StyleSheet.create({
   // ── Transactions Card ──
   transactionsCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: ms(12),
-    padding: ms(4),
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    borderRadius:    ms(12),
+    padding:         ms(4),
+    elevation:       2,
+    shadowColor:     '#000',
+    shadowOffset:    { width: 0, height: 1 },
+    shadowOpacity:   0.1,
+    shadowRadius:    2,
   },
   transactionItem: {
     flexDirection: 'row',
-    alignItems: 'center',
-    padding: ms(12),
+    alignItems:    'center',
+    padding:       ms(12),
   },
   txIconContainer: {
-    width: txIconSize,
-    height: txIconSize,
-    borderRadius: txIconSize / 2,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: scaleW(12),
+    width:         txIconSize,
+    height:        txIconSize,
+    borderRadius:  txIconSize / 2,
+    justifyContent:'center',
+    alignItems:    'center',
+    marginRight:   scaleW(12),
   },
-  txInfo: { flex: 1 },
+  txInfo:        { flex: 1 },
   txDescription: { fontSize: fs(14), fontWeight: '500', color: '#1E293B', marginBottom: scaleH(4) },
-  txMeta: { flexDirection: 'row', alignItems: 'center', gap: scaleW(8) },
-  txDate: { fontSize: fs(12), color: '#94A3B8' },
+  txMeta:        { flexDirection: 'row', alignItems: 'center', gap: scaleW(8) },
+  txDate:        { fontSize: fs(12), color: '#94A3B8' },
   multiplierTag: {
-    backgroundColor: '#FEF3C7',
+    backgroundColor:   '#FEF3C7',
     paddingHorizontal: scaleW(6),
-    paddingVertical: scaleH(2),
-    borderRadius: ms(6),
+    paddingVertical:   scaleH(2),
+    borderRadius:      ms(6),
   },
   multiplierText: { fontSize: fs(10), fontWeight: 'bold', color: '#D97706' },
-  txCoins: { fontSize: fs(16), fontWeight: 'bold', marginLeft: scaleW(8) },
-  txDivider: { height: 1, backgroundColor: '#F1F5F9', marginLeft: txIconSize + scaleW(12) },
+  txCoins:        { fontSize: fs(16), fontWeight: 'bold', marginLeft: scaleW(8) },
+  txDivider:      { height: 1, backgroundColor: '#F1F5F9', marginLeft: txIconSize + scaleW(12) },
 
   // ── Options Grid ──
   optionsGrid: { gap: scaleH(12) },
   optionCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: ms(16),
-    padding: ms(20),
-    position: 'relative',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
+    borderRadius:    ms(16),
+    padding:         ms(20),
+    position:        'relative',
+    elevation:       2,
+    shadowColor:     '#000',
+    shadowOffset:    { width: 0, height: 1 },
+    shadowOpacity:   0.1,
+    shadowRadius:    3,
   },
   badge: {
-    position: 'absolute',
-    top: scaleH(12),
-    right: scaleW(12),
-    backgroundColor: '#10B981',
+    position:          'absolute',
+    top:               scaleH(12),
+    right:             scaleW(12),
+    backgroundColor:   '#10B981',
     paddingHorizontal: scaleW(10),
-    paddingVertical: scaleH(4),
-    borderRadius: ms(12),
+    paddingVertical:   scaleH(4),
+    borderRadius:      ms(12),
   },
-  badgeNew: { backgroundColor: '#F59E0B' },
-  badgeText: { fontSize: fs(10), fontWeight: 'bold', color: '#FFFFFF' },
+  badgeNew:          { backgroundColor: '#F59E0B' },
+  badgeText:         { fontSize: fs(10), fontWeight: 'bold', color: '#FFFFFF' },
   optionIconContainer: {
-    width: optionIconSize,
-    height: optionIconSize,
-    borderRadius: optionIconSize / 2,
+    width:          optionIconSize,
+    height:         optionIconSize,
+    borderRadius:   optionIconSize / 2,
     justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: scaleH(16),
+    alignItems:     'center',
+    marginBottom:   scaleH(16),
   },
   optionTitle:       { fontSize: fs(16), fontWeight: '600', color: '#0F172A', marginBottom: scaleH(6) },
   optionDescription: { fontSize: fs(13), color: '#64748B', marginBottom: scaleH(12) },
@@ -548,54 +566,54 @@ const styles = StyleSheet.create({
   // ── Earn Card ──
   earnCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: ms(12),
-    padding: ms(16),
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    borderRadius:    ms(12),
+    padding:         ms(16),
+    elevation:       2,
+    shadowColor:     '#000',
+    shadowOffset:    { width: 0, height: 1 },
+    shadowOpacity:   0.1,
+    shadowRadius:    2,
   },
   earnItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: scaleH(12),
+    flexDirection:  'row',
+    alignItems:     'center',
+    paddingVertical:scaleH(12),
   },
   earnIconContainer: {
-    width: earnIconSize,
-    height: earnIconSize,
-    borderRadius: earnIconSize / 2,
+    width:           earnIconSize,
+    height:          earnIconSize,
+    borderRadius:    earnIconSize / 2,
     backgroundColor: '#EEF2FF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: scaleW(12),
+    justifyContent:  'center',
+    alignItems:      'center',
+    marginRight:     scaleW(12),
   },
-  earnText: { flex: 1, fontSize: fs(15), color: '#0F172A', fontWeight: '500' },
+  earnText:     { flex: 1, fontSize: fs(15), color: '#0F172A', fontWeight: '500' },
   earnCoinsTag: {
-    backgroundColor: '#DCFCE7',
+    backgroundColor:   '#DCFCE7',
     paddingHorizontal: scaleW(12),
-    paddingVertical: scaleH(6),
-    borderRadius: ms(12),
+    paddingVertical:   scaleH(6),
+    borderRadius:      ms(12),
   },
   earnCoinsText: { fontSize: fs(14), fontWeight: 'bold', color: '#16A34A' },
   earnDivider:   { height: 1, backgroundColor: '#F1F5F9' },
 
   // ── Info Banner ──
   infoBanner: {
-    flexDirection: 'row',
-    backgroundColor: '#EFF6FF',
-    padding: ms(16),
-    borderRadius: ms(12),
+    flexDirection:    'row',
+    backgroundColor:  '#EFF6FF',
+    padding:          ms(16),
+    borderRadius:     ms(12),
     marginHorizontal: scaleW(16),
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#DBEAFE',
-    marginBottom: scaleH(20),
+    alignItems:       'center',
+    borderWidth:      1,
+    borderColor:      '#DBEAFE',
+    marginBottom:     scaleH(20),
   },
   infoBannerText: {
-    flex: 1,
-    fontSize: fs(13),
-    color: '#1E40AF',
+    flex:       1,
+    fontSize:   fs(13),
+    color:      '#1E40AF',
     marginLeft: scaleW(12),
     lineHeight: fs(13) * 1.4,
   },

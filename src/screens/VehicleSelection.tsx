@@ -19,20 +19,23 @@ import { vehicleApi, VehiclePricing } from '../api/vehicle';
 
 // ─── Responsive helpers ───────────────────────────────────────────────────────
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-
-const BASE_WIDTH  = 390;
-const BASE_HEIGHT = 844;
-
+const BASE_WIDTH  = 320;
+const BASE_HEIGHT = 700;
 const scaleW = (size: number) => (SCREEN_WIDTH / BASE_WIDTH) * size;
 const scaleH = (size: number) => (SCREEN_HEIGHT / BASE_HEIGHT) * size;
+const ms = (size: number, factor = 0.45) => size + (scaleW(size) - size) * factor;
+const fs = (size: number) => Math.round(PixelRatio.roundToNearestPixel(ms(size)));
 
-const ms = (size: number, factor = 0.45) =>
-  size + (scaleW(size) - size) * factor;
+// ─── Colors ───────────────────────────────────────────────────────────────────
+const BLUE       = '#378ADD';
+const BLUE_CARD  = '#EBF4FD';
+const DARK       = '#1A1A1A';
+const GREY       = '#6B7280';
+const GREY_LIGHT = '#F3F4F6';
+const WHITE      = '#FFFFFF';
+const BG         = '#F5F5F5';
 
-const fs = (size: number) =>
-  Math.round(PixelRatio.roundToNearestPixel(ms(size)));
-// ─────────────────────────────────────────────────────────────────────────────
-
+// ─── Vehicle Images ───────────────────────────────────────────────────────────
 const VEHICLE_IMAGES: Record<string, any> = {
   bike:       require('../assets/images/bike_img.png'),
   scooty:     require('../assets/images/scooter_img.png'),
@@ -43,6 +46,28 @@ const VEHICLE_IMAGES: Record<string, any> = {
   tata_407:   require('../assets/images/vehicle3.png'),
 };
 
+// ─── ETA ranges per vehicle type ─────────────────────────────────────────────
+const VEHICLE_ETA: Record<string, string> = {
+  bike:       '20–25 mins',
+  scooty:     '25–30 mins',
+  auto:       '35–40 mins',
+  pickup:     '45–55 mins',
+  mini_truck: '60–75 mins',
+ 
+};
+
+// ─── Vehicle Meta ─────────────────────────────────────────────────────────────
+const VEHICLE_META: Record<string, { capacity: string; startingLabel: string; baseAmount: number }> = {
+  bike:       { capacity: 'Up to 20 kg',   startingLabel: 'From ₹35',  baseAmount: 35  },
+  scooty:     { capacity: 'Up to 22 kg',   startingLabel: 'From ₹40',  baseAmount: 40  },
+  auto:       { capacity: 'Up to 700 kg',  startingLabel: 'From ₹80',  baseAmount: 80  },
+  pickup:     { capacity: 'Up to 1.5 ton', startingLabel: 'From ₹150', baseAmount: 150 },
+  mini_truck: { capacity: 'Up to 2.5 ton', startingLabel: 'From ₹250', baseAmount: 250 },
+  tata_ace:   { capacity: 'Up to 1.5 ton', startingLabel: 'From ₹150', baseAmount: 150 },
+  tata_407:   { capacity: 'Up to 2.5 ton', startingLabel: 'From ₹250', baseAmount: 250 },
+};
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 export interface UIVehicle {
   id: string;
   vehicleType: string;
@@ -52,7 +77,9 @@ export interface UIVehicle {
   perKmRate: number;
   minimumFare: number;
   baseDistanceKm: number;
-  startingFare: number;        // baseFare + platform fee (incl. GST)
+  startingFare: number;
+  capacity: string;
+  startingLabel: string;
   helperCharge: number;
   helperAvailable: boolean;
   bestFor: string | null;
@@ -60,17 +87,17 @@ export interface UIVehicle {
   perMinuteRate: number;
   nightSurchargePercent: number;
   multiStopFee: number;
+  eta: string;
+  baseAmount: number;
 }
 
 const formatVehicleName = (vehicleType: string): string =>
-  vehicleType
-    .split('_')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
+  vehicleType.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 
+// ─── Component ────────────────────────────────────────────────────────────────
 const VehicleSelection = () => {
   const navigation = useNavigation<any>();
-  const route = useRoute<any>();
+  const route      = useRoute<any>();
   const [selectedVehicle, setSelectedVehicle] = useState<string | null>(null);
   const [vehicles, setVehicles]               = useState<UIVehicle[]>([]);
   const [loading, setLoading]                 = useState(true);
@@ -82,9 +109,8 @@ const VehicleSelection = () => {
     receiverName, receiverPhone, alternativePhone,
   } = route.params || {};
 
-  const fadeAnim    = useRef(new Animated.Value(1)).current;
-  const slideAnim   = useRef(new Animated.Value(0)).current;
-  const buttonScale = useRef(new Animated.Value(1)).current;
+  const fadeAnim  = useRef(new Animated.Value(1)).current;
+  const slideAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => { fetchVehicleTypes(); }, []);
 
@@ -92,9 +118,7 @@ const VehicleSelection = () => {
     try {
       setLoading(true);
       setError(null);
-      const token = await AsyncStorage.getItem('auth_token');
-      console.log('Auth Token:', token ? 'Exists' : 'Missing');
-
+      await AsyncStorage.getItem('auth_token');
       const response: any = await vehicleApi.getVehiclePricing();
 
       let vehiclesData: VehiclePricing[] = [];
@@ -102,23 +126,27 @@ const VehicleSelection = () => {
       else if (response && Array.isArray(response.data)) vehiclesData = response.data;
 
       if (vehiclesData.length > 0) {
-        const transformedVehicles: UIVehicle[] = vehiclesData
+        const transformed: UIVehicle[] = vehiclesData
           .filter((v: VehiclePricing) => v.is_active)
           .map((vehicle: VehiclePricing) => {
-            const baseFare      = parseFloat(vehicle.base_fare);
-            const minimumFare   = parseFloat(vehicle.minimum_fare);
-            const baseDistKm    = parseFloat(vehicle.base_distance_km) || 2;
-            const startingFare  = baseFare;
+            const key  = vehicle.vehicle_type.toLowerCase();
+            const meta = VEHICLE_META[key] ?? {
+              capacity: '—',
+              startingLabel: `From ₹${vehicle.base_fare}`,
+              baseAmount: parseFloat(vehicle.base_fare),
+            };
             return {
               id: vehicle.id,
               vehicleType: vehicle.vehicle_type,
               name: formatVehicleName(vehicle.vehicle_type),
-              priceRange: `From ₹${startingFare}`,
-              basePrice: baseFare,
+              priceRange: meta.startingLabel,
+              basePrice: parseFloat(vehicle.base_fare),
               perKmRate: parseFloat(vehicle.per_km_rate),
-              minimumFare,
-              baseDistanceKm: baseDistKm,
-              startingFare,
+              minimumFare: parseFloat(vehicle.minimum_fare),
+              baseDistanceKm: parseFloat(vehicle.base_distance_km) || 2,
+              startingFare: parseFloat(vehicle.base_fare),
+              capacity: meta.capacity,
+              startingLabel: meta.startingLabel,
               helperCharge: parseFloat(vehicle.helper_charge_per_person) || 200,
               helperAvailable: vehicle.helper_available,
               bestFor: vehicle.best_for,
@@ -126,14 +154,15 @@ const VehicleSelection = () => {
               perMinuteRate: parseFloat(vehicle.per_minute_rate),
               nightSurchargePercent: parseFloat(vehicle.night_surcharge_percent),
               multiStopFee: parseFloat(vehicle.multi_stop_fee),
+              eta: VEHICLE_ETA[key] ?? '30–40 mins',
+              baseAmount: meta.baseAmount,
             };
           });
-        setVehicles(transformedVehicles);
+        setVehicles(transformed);
       } else {
         throw new Error('No vehicle data received');
       }
     } catch (err) {
-      console.error('Error fetching vehicle types:', err);
       setError('Failed to load vehicles. Please try again.');
     } finally {
       setLoading(false);
@@ -154,109 +183,114 @@ const VehicleSelection = () => {
     });
   };
 
-  const calculateTotalPrice = (): string => {
-    const vehicle = getSelectedVehicleData();
-    if (!vehicle) return '₹0';
-    return `₹${vehicle.startingFare}`;
-  };
-
   // ── Vehicle Card ─────────────────────────────────────────────────────────
-  const renderVehicleCard = ({ item }: { item: UIVehicle }) => {
+  const renderVehicleCard = ({ item, index }: { item: UIVehicle; index: number }) => {
     const isSelected   = selectedVehicle === item.id;
-    const vehicleImage = item.vehicleType
-      ? VEHICLE_IMAGES[item.vehicleType.toLowerCase()]
-      : undefined;
+    const isFastest    = index === 0;
+    const vehicleImage = VEHICLE_IMAGES[item.vehicleType.toLowerCase()];
 
     return (
       <TouchableOpacity
-        style={[styles.card, isSelected && styles.selectedCard]}
+        style={[styles.card, isSelected && styles.cardSelected]}
         onPress={() => setSelectedVehicle(item.id)}
-        activeOpacity={0.7}
+        activeOpacity={0.82}
       >
-        <View style={styles.cardTopRow}>
-          <View style={[styles.vehicleIcon, isSelected && styles.vehicleIconSelected]}>
+        {/* Top row: Fastest badge + name + Choose button */}
+        <View style={styles.cardTopBar}>
+          <View style={styles.cardTopLeft}>
+            {isFastest && (
+              <View style={styles.fastestBadge}>
+                <Text style={styles.fastestText}>Fastest ⚡</Text>
+              </View>
+            )}
+            <Text style={styles.vehicleName}>{item.name}</Text>
+          </View>
+
+          <TouchableOpacity
+            style={[styles.selectBtn, isSelected && styles.selectBtnActive]}
+            onPress={() => setSelectedVehicle(item.id)}
+            activeOpacity={0.8}
+          >
+            <Icon
+              name={isSelected ? 'check-circle' : 'radio-button-unchecked'}
+              size={ms(14)}
+              color={isSelected ? WHITE : GREY}
+            />
+            <Text style={[styles.selectBtnText, isSelected && styles.selectBtnTextActive]}>
+              {isSelected ? 'Chosen' : 'Choose'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Middle: image + capacity + price */}
+        <View style={styles.cardBody}>
+          <View style={[styles.imgBox, isSelected && styles.imgBoxSelected]}>
             {vehicleImage ? (
-              <Image source={vehicleImage} style={styles.vehicleImage} resizeMode="contain" />
+              <Image source={vehicleImage} style={styles.vehicleImg} resizeMode="contain" />
             ) : (
               <Text style={styles.emoji}>🚛</Text>
             )}
           </View>
 
-          <View style={styles.info}>
-            <Text style={styles.name} numberOfLines={1}>{item.name}</Text>
+          {/* Capacity */}
+          <View style={styles.metaBlock}>
+            <View style={styles.metaRow}>
+              <Icon name="inventory-2" size={ms(11)} color={GREY} />
+              <Text style={styles.metaText}>{item.capacity}</Text>
+            </View>
           </View>
 
-          <View style={styles.priceContainer}>
-            <Text
-              style={[styles.priceRange, isSelected && styles.priceRangeSelected]}
-              numberOfLines={1}
-              adjustsFontSizeToFit
-              minimumFontScale={0.8}
-            >
-              {item.priceRange}
+          {/* Price */}
+          <View style={styles.priceBlock}>
+            <Text style={[styles.priceAmount, isSelected && styles.priceAmountSelected]}>
+              ₹{item.baseAmount}
             </Text>
-            {isSelected && (
-              <Icon name="check-circle" size={ms(20)} color="#10B981" style={styles.checkIcon} />
-            )}
+            <Text style={styles.priceLabel}>Starts From</Text>
           </View>
         </View>
-
       </TouchableOpacity>
     );
   };
 
-  const renderListHeader = () => (
-    <View style={styles.listHeader}>
-      <Text style={styles.sectionTitle}>Available Vehicles</Text>
-    </View>
-  );
-
+  const selectedData = getSelectedVehicleData();
 
   return (
     <View style={styles.container}>
-      {/* Header sits OUTSIDE SafeAreaView so it is never clipped or blocked */}
-      <SafeAreaView style={styles.safeAreaHeader} edges={['top']}>
+      {/* ── Header ── */}
+      <SafeAreaView style={styles.safeHeader}>
         <View style={styles.header}>
-          {/* ✅ FIXED: canGoBack() guard prevents "GO_BACK not handled" error */}
           <TouchableOpacity
             onPress={() => {
-              if (navigation.canGoBack()) {
-                navigation.goBack();
-              } else {
-                navigation.navigate('PickupDropSelection');
-              }
+              if (navigation.canGoBack()) navigation.goBack();
+              else navigation.navigate('PickupDropSelection');
             }}
-            style={styles.backButton}
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            style={styles.backBtn}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             activeOpacity={0.6}
           >
-            <Icon name="arrow-back" size={ms(24)} color="#1E293B" />
+            <Icon name="arrow-back" size={ms(18)} color={DARK} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Select Vehicle</Text>
+          <View style={styles.headerTextBlock}>
+            <Text style={styles.headerTitle}>Select Vehicle</Text>
+            <Text style={styles.headerSub}>Choose the right vehicle for your delivery</Text>
+          </View>
         </View>
       </SafeAreaView>
 
-      {/* Body */}
-      <Animated.View
-        style={[styles.content, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}
-      >
+      {/* ── List ── */}
+      <Animated.View style={[styles.listWrap, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
         {loading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#3B82F6" />
+          <View style={styles.centered}>
+            <ActivityIndicator size="large" color={BLUE} />
             <Text style={styles.loadingText}>Loading vehicles...</Text>
           </View>
         ) : error ? (
-          <View style={styles.errorContainer}>
-            <Icon name="error-outline" size={ms(48)} color="#EF4444" />
+          <View style={styles.centered}>
+            <Icon name="error-outline" size={ms(40)} color="#EF4444" />
             <Text style={styles.errorText}>{error}</Text>
-            <TouchableOpacity
-              style={styles.retryButton}
-              onPress={fetchVehicleTypes}
-              activeOpacity={0.7}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <Icon name="refresh" size={ms(20)} color="#FFFFFF" />
-              <Text style={styles.retryButtonText}>Retry</Text>
+            <TouchableOpacity style={styles.retryBtn} onPress={fetchVehicleTypes} activeOpacity={0.7}>
+              <Icon name="refresh" size={ms(16)} color={WHITE} />
+              <Text style={styles.retryText}>Retry</Text>
             </TouchableOpacity>
           </View>
         ) : (
@@ -264,340 +298,328 @@ const VehicleSelection = () => {
             data={vehicles}
             keyExtractor={item => item.id}
             renderItem={renderVehicleCard}
-            ListHeaderComponent={renderListHeader}
-
             contentContainerStyle={styles.listContent}
             showsVerticalScrollIndicator={false}
-            bounces={true}
+            bounces
             extraData={selectedVehicle}
           />
         )}
       </Animated.View>
 
-      {/* Footer */}
+      {/* ── Sticky Footer ── */}
       <View style={styles.footer}>
-        {selectedVehicle && (
-          <View style={styles.priceBreakdown}>
-            <Text style={styles.totalLabel}>Estimated Total</Text>
-            <Text style={styles.totalPrice}>{calculateTotalPrice()}</Text>
+        {/* Delivery ETA info row */}
+        <View style={styles.footerInfoRow}>
+          <View style={styles.deliveryInfoBlock}>
+            <Icon name="schedule" size={ms(14)} color={GREY} />
+            <View style={styles.deliveryTextBlock}>
+              <Text style={styles.deliveryLabel}>Estimated Delivery</Text>
+              <Text style={styles.deliveryEta}>ETA updates based on distance & traffic</Text>
+            </View>
           </View>
-        )}
-        <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
-          <TouchableOpacity
-            style={[styles.nextButton, !selectedVehicle && styles.nextButtonDisabled]}
-            onPress={handleBook}
-            disabled={!selectedVehicle}
-            activeOpacity={0.8}
-          >
-            <Text style={[styles.nextButtonText, !selectedVehicle && styles.nextButtonTextDisabled]}>
-              Continue to Book
+
+          <View style={styles.etaBlock}>
+            <Text style={styles.etaLabel}>ETA</Text>
+            <Text style={styles.etaValue}>
+              {selectedData ? selectedData.eta : '— min'}
             </Text>
-            <Image
-              source={require('../assets/images/arrow.png')}
-              style={[styles.arrowIcon, !selectedVehicle && styles.arrowDisabled]}
-              resizeMode="contain"
-            />
-          </TouchableOpacity>
-        </Animated.View>
+          </View>
+        </View>
+
+        {/* Check Final Price button */}
+        <TouchableOpacity
+          style={[styles.confirmBtn, !selectedVehicle && styles.confirmBtnDisabled]}
+          onPress={handleBook}
+          disabled={!selectedVehicle}
+          activeOpacity={0.85}
+        >
+          <Text style={[styles.confirmText, !selectedVehicle && styles.confirmTextDisabled]}>
+            Check Final Price
+          </Text>
+          <Image
+            source={require('../assets/images/arrow.png')}
+            style={[styles.arrowIcon, !selectedVehicle && styles.arrowDisabled]}
+            resizeMode="contain"
+          />
+        </TouchableOpacity>
       </View>
     </View>
   );
 };
 
-// ── Detail row ───────────────────────────────────────────────────────────────
-const DetailRow = ({ label, value }: { label: string; value: string }) => (
-  <View style={styles.detailRow}>
-    <Text style={styles.detailLabel}>{label}</Text>
-    <Text style={styles.detailValue}>{value}</Text>
-  </View>
-);
-
-// ─── Derived responsive values ────────────────────────────────────────────────
-const vehicleIconW    = ms(72);
-const vehicleIconH    = ms(64);
-const vehicleImageW   = ms(56);
-const vehicleImageH   = ms(50);
-const helperIconSize  = ms(50);
-const helperImageSize = ms(28);
-const backBtnSize     = ms(40);
-const arrowIconSize   = ms(20);
-const priceColWidth   = scaleW(88);
+// ─── Derived sizes ────────────────────────────────────────────────────────────
+const IMG_BOX_W = ms(70);
+const IMG_BOX_H = ms(60);
+const IMG_W     = ms(60);
+const IMG_H     = ms(52);
+const BACK_SIZE = ms(32);
+const ARROW_SZ  = ms(16);
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFC' },
-  safeAreaHeader: { backgroundColor: '#FFFFFF' },
+  container:  { flex: 1, backgroundColor: BG },
+  safeHeader: { backgroundColor: WHITE },
 
   // ── Header ──
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: scaleW(16),
-    paddingVertical: scaleH(14),
-    backgroundColor: '#FFFFFF',
+    flexDirection:     'row',
+    alignItems:        'center',
+    paddingHorizontal: scaleW(12),
+    paddingVertical:   scaleH(10),
+    backgroundColor:   WHITE,
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
+    borderBottomColor: '#E5E7EB',
   },
-  backButton: {
-    marginRight: scaleW(14),
-    width: backBtnSize,
-    height: backBtnSize,
-    borderRadius: backBtnSize / 2,
-    backgroundColor: '#F1F5F9',
-    justifyContent: 'center',
-    alignItems: 'center',
-    overflow: 'visible',
-    zIndex: 10,
+  backBtn: {
+    width:           BACK_SIZE,
+    height:          BACK_SIZE,
+    borderRadius:    BACK_SIZE / 2,
+    backgroundColor: GREY_LIGHT,
+    justifyContent:  'center',
+    alignItems:      'center',
+    marginRight:     scaleW(10),
   },
-  headerTitle: { fontSize: fs(22), fontWeight: 'bold', color: '#1E293B' },
+  headerTextBlock: { flex: 1 },
+  headerTitle: {
+    fontSize:      fs(18),
+    fontWeight:    '800',
+    color:         DARK,
+    letterSpacing: -0.3,
+  },
+  headerSub: {
+    fontSize:   fs(10),
+    color:      GREY,
+    marginTop:  scaleH(1),
+    fontWeight: '500',
+  },
 
   // ── List ──
-  content: { flex: 1 },
+  listWrap:    { flex: 1 },
   listContent: {
-    paddingHorizontal: scaleW(16),
-    paddingTop: scaleH(12),
-    paddingBottom: scaleH(24),
-  },
-  listHeader:   { marginBottom: scaleH(8) },
-  sectionTitle: {
-    fontSize: fs(17),
-    fontWeight: 'bold',
-    color: '#1E293B',
-    marginBottom: scaleH(10),
+    paddingHorizontal: scaleW(10),
+    paddingTop:        scaleH(10),
+    paddingBottom:     scaleH(12),
   },
 
   // ── Card ──
   card: {
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: ms(14),
-    paddingTop: ms(14),
-    paddingBottom: ms(10),
-    marginBottom: scaleH(10),
-    borderRadius: ms(14),
-    borderWidth: 2,
-    borderColor: '#E2E8F0',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    backgroundColor: WHITE,
+    borderRadius:    ms(14),
+    marginBottom:    scaleH(9),
+    borderWidth:     1.5,
+    borderColor:     '#E5E7EB',
+    overflow:        'hidden',
+    shadowColor:     '#000',
+    shadowOffset:    { width: 0, height: 2 },
+    shadowOpacity:   0.06,
+    shadowRadius:    6,
+    elevation:       3,
   },
-  selectedCard: { borderColor: '#3B82F6', backgroundColor: '#EFF6FF' },
-  cardTopRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: scaleH(6),
+  cardSelected: {
+    backgroundColor: BLUE_CARD,
+    borderColor:     BLUE,
   },
-  vehicleIcon: {
-    width: vehicleIconW,
-    height: vehicleIconH,
-    borderRadius: ms(10),
-    backgroundColor: 'rgba(59,130,246,0.08)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: scaleW(12),
-    overflow: 'hidden',
-    flexShrink: 0,
-  },
-  vehicleIconSelected: { backgroundColor: 'rgba(59,130,246,0.15)' },
-  vehicleImage: { width: vehicleImageW, height: vehicleImageH },
-  emoji: { fontSize: fs(30) },
-  info: { flex: 1, paddingRight: scaleW(4) },
-  name: {
-    fontSize: fs(16),
-    fontWeight: 'bold',
-    color: '#1E293B',
-    marginBottom: scaleH(2),
-  },
-  details: {
-    fontSize: fs(12),
-    color: '#64748B',
-    lineHeight: fs(12) * 1.45,
-  },
-  rateInfo: {
-    fontSize: fs(11),
-    color: '#3B82F6',
-    marginTop: scaleH(3),
-    fontWeight: '500',
-  },
-  priceContainer: {
-    width: priceColWidth,
-    alignItems: 'flex-end',
-    flexShrink: 0,
-  },
-  priceRange: {
-    fontSize: fs(13),
-    fontWeight: '700',
-    color: '#3B82F6',
-    textAlign: 'right',
-  },
-  priceRangeSelected: { color: '#2563EB' },
-  checkIcon: { marginTop: scaleH(5), alignSelf: 'flex-end' },
-  rateRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginLeft: vehicleIconW + scaleW(12),
-  },
-  rateText:      { fontSize: fs(12), color: '#3B82F6', fontWeight: '600' },
-  rateSeparator: { fontSize: fs(12), color: '#94A3B8' },
 
-  // ── Detail Panel ──
-  detailPanel: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: ms(12),
-    borderWidth: 1.5,
-    borderColor: '#BFDBFE',
-    padding: ms(14),
-    marginBottom: scaleH(16),
+  // Top bar
+  cardTopBar: {
+    flexDirection:     'row',
+    alignItems:        'center',
+    justifyContent:    'space-between',
+    paddingHorizontal: ms(11),
+    paddingTop:        ms(9),
+    paddingBottom:     ms(4),
   },
-  detailPanelTitle: {
-    fontSize: fs(14),
-    fontWeight: '700',
-    color: '#1E40AF',
-    marginBottom: scaleH(10),
-  },
-  detailGrid: { gap: scaleH(4) },
-  detailRow: {
+  cardTopLeft: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: scaleH(4),
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    alignItems:    'center',
+    gap:           scaleW(6),
+    flex:          1,
   },
-  detailLabel: { fontSize: fs(12), color: '#64748B' },
-  detailValue: { fontSize: fs(12), fontWeight: '600', color: '#1E293B' },
+  fastestBadge: {
+    backgroundColor:   BLUE,
+    borderRadius:      ms(20),
+    paddingHorizontal: scaleW(8),
+    paddingVertical:   scaleH(2),
+  },
+  fastestText: {
+    fontSize:   fs(9),
+    fontWeight: '800',
+    color:      WHITE,
+  },
+  vehicleName: {
+    fontSize:   fs(14),
+    fontWeight: '800',
+    color:      DARK,
+  },
 
-  // ── Helper ──
-  helperSection: { marginTop: scaleH(4), marginBottom: scaleH(10) },
-  helperCard: {
+  // Choose button
+  selectBtn: {
+    flexDirection:     'row',
+    alignItems:        'center',
+    gap:               scaleW(4),
+    borderRadius:      ms(20),
+    paddingHorizontal: scaleW(9),
+    paddingVertical:   scaleH(4),
+    borderWidth:       1.5,
+    borderColor:       '#D1D5DB',
+    backgroundColor:   WHITE,
+  },
+  selectBtnActive: {
+    backgroundColor: DARK,
+    borderColor:     DARK,
+  },
+  selectBtnText: {
+    fontSize:   fs(10),
+    fontWeight: '700',
+    color:      GREY,
+  },
+  selectBtnTextActive: { color: WHITE },
+
+  // Card body
+  cardBody: {
+    flexDirection:     'row',
+    alignItems:        'center',
+    paddingHorizontal: ms(11),
+    paddingBottom:     ms(11),
+  },
+  imgBox: {
+    width:           IMG_BOX_W,
+    height:          IMG_BOX_H,
+    borderRadius:    ms(10),
+    backgroundColor: GREY_LIGHT,
+    justifyContent:  'center',
+    alignItems:      'center',
+    marginRight:     scaleW(9),
+    flexShrink:      0,
+  },
+  imgBoxSelected: { backgroundColor: '#D6EAFA' },
+  vehicleImg:     { width: IMG_W, height: IMG_H },
+  emoji:          { fontSize: fs(24) },
+
+  metaBlock: { flex: 1 },
+  metaRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    padding: ms(14),
-    borderRadius: ms(12),
-    borderWidth: 2,
-    borderColor: '#E2E8F0',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    alignItems:    'center',
+    gap:           scaleW(4),
   },
-  helperCardSelected: { borderColor: '#10B981', backgroundColor: '#F0FDF4' },
-  helperIconContainer: {
-    width: helperIconSize,
-    height: helperIconSize,
-    borderRadius: ms(10),
-    backgroundColor: 'rgba(16,185,129,0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: scaleW(12),
-  },
-  helperImage:       { width: helperImageSize, height: helperImageSize },
-  helperInfo:        { flex: 1 },
-  helperTitle:       { fontSize: fs(15), fontWeight: 'bold', color: '#1E293B', marginBottom: scaleH(3) },
-  helperDescription: { fontSize: fs(12), color: '#64748B' },
-  counterContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F1F5F9',
-    borderRadius: ms(8),
-    padding: ms(4),
-  },
-  counterButton: { padding: ms(4), backgroundColor: '#E2E8F0', borderRadius: ms(4) },
-  counterText: {
-    fontSize: fs(15),
+  metaText: {
+    fontSize:   fs(13),
+    color:      GREY,
     fontWeight: '600',
-    color: '#1E293B',
-    marginHorizontal: scaleW(10),
   },
-  addButton: {
-    backgroundColor: '#EFF6FF',
-    paddingHorizontal: scaleW(14),
-    paddingVertical: scaleH(7),
-    borderRadius: ms(6),
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
+
+  priceBlock:  { alignItems: 'flex-end', flexShrink: 0 },
+  priceAmount: {
+    fontSize:      fs(24),
+    fontWeight:    '900',
+    color:         DARK,
+    letterSpacing: -0.8,
   },
-  addButtonText: { color: '#3B82F6', fontWeight: '600', fontSize: fs(13) },
+  priceAmountSelected: { color: BLUE },
+  priceLabel: {
+    fontSize:   fs(9),
+    color:      GREY,
+    fontWeight: '500',
+    marginTop:  scaleH(-2),
+  },
 
   // ── Footer ──
   footer: {
-    paddingHorizontal: scaleW(16),
-    paddingTop: scaleH(12),
-    paddingBottom: scaleH(14),
-    backgroundColor: '#FFFFFF',
-    borderTopWidth: 1,
-    borderTopColor: '#E2E8F0',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
+    backgroundColor:   WHITE,
+    paddingHorizontal: scaleW(12),
+    paddingTop:        scaleH(10),
+    paddingBottom:     scaleH(16),
+    borderTopWidth:    1,
+    borderTopColor:    '#E5E7EB',
+    elevation:         8,
+    shadowColor:       '#000',
+    shadowOffset:      { width: 0, height: -3 },
+    shadowOpacity:     0.08,
+    shadowRadius:      6,
   },
-  priceBreakdown: {
-    flexDirection: 'row',
+  footerInfoRow: {
+    flexDirection:  'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: scaleH(12),
+    alignItems:     'flex-start',
+    marginBottom:   scaleH(9),
+    gap:            scaleW(12),
   },
-  totalLabel:      { fontSize: fs(14), color: '#64748B', fontWeight: '600' },
-  helperBreakdown: { fontSize: fs(11), color: '#10B981', marginTop: scaleH(2) },
-  totalPrice:      { fontSize: fs(22), fontWeight: 'bold', color: '#1E293B' },
-  nextButton: {
-    backgroundColor: '#3B82F6',
-    borderRadius: ms(12),
-    paddingVertical: scaleH(15),
+  deliveryInfoBlock: {
     flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
+    alignItems:    'flex-start',
+    gap:           scaleW(8),
+    flex:          1,
   },
-  nextButtonDisabled: { backgroundColor: '#E2E8F0' },
-  nextButtonText: {
-    fontSize: fs(15),
-    fontWeight: '600',
-    color: '#FFFFFF',
-    marginRight: scaleW(8),
+  deliveryTextBlock: { flex: 1 },
+  deliveryLabel: {
+    fontSize:     fs(12),
+    fontWeight:   '700',
+    color:        DARK,
+    marginBottom: scaleH(2),
   },
-  nextButtonTextDisabled: { color: '#94A3B8' },
-  arrowIcon: {
-    width: arrowIconSize,
-    height: arrowIconSize,
-    tintColor: '#FFFFFF',
+  deliveryEta: {
+    fontSize:   fs(10),
+    color:      GREY,
+    fontWeight: '500',
+    lineHeight: fs(14),
   },
-  arrowDisabled: { tintColor: '#94A3B8' },
+  etaBlock: { alignItems: 'flex-end' },
+  etaLabel: {
+    fontSize:     fs(10),
+    color:        GREY,
+    fontWeight:   '600',
+    marginBottom: scaleH(2),
+  },
+  etaValue: {
+    fontSize:   fs(16),
+    fontWeight: '800',
+    color:      DARK,
+  },
+
+  confirmBtn: {
+    backgroundColor: BLUE,
+    borderRadius:    ms(13),
+    paddingVertical: scaleH(13),
+    flexDirection:   'row',
+    justifyContent:  'center',
+    alignItems:      'center',
+    gap:             scaleW(6),
+  },
+  confirmBtnDisabled: { backgroundColor: '#E5E7EB' },
+  confirmText: {
+    fontSize:      fs(13),
+    fontWeight:    '800',
+    color:         WHITE,
+    letterSpacing: 0.2,
+  },
+  confirmTextDisabled: { color: '#9CA3AF' },
+  arrowIcon:     { width: ARROW_SZ, height: ARROW_SZ, tintColor: WHITE },
+  arrowDisabled: { tintColor: '#9CA3AF' },
 
   // ── Loading / Error ──
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+  centered: {
+    flex:            1,
+    justifyContent:  'center',
+    alignItems:      'center',
     paddingVertical: scaleH(60),
   },
-  loadingText: { marginTop: scaleH(14), fontSize: fs(15), color: '#64748B' },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: scaleH(60),
-    paddingHorizontal: scaleW(40),
-  },
+  loadingText: { marginTop: scaleH(10), fontSize: fs(12), color: GREY },
   errorText: {
-    marginTop: scaleH(14),
-    fontSize: fs(15),
-    color: '#64748B',
-    textAlign: 'center',
-    marginBottom: scaleH(20),
+    marginTop:    scaleH(10),
+    fontSize:     fs(12),
+    color:        GREY,
+    textAlign:    'center',
+    marginBottom: scaleH(16),
   },
-  retryButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#3B82F6',
-    paddingHorizontal: scaleW(22),
-    paddingVertical: scaleH(11),
-    borderRadius: ms(8),
-    gap: scaleW(8),
+  retryBtn: {
+    flexDirection:     'row',
+    alignItems:        'center',
+    backgroundColor:   BLUE,
+    paddingHorizontal: scaleW(18),
+    paddingVertical:   scaleH(9),
+    borderRadius:      ms(9),
+    gap:               scaleW(6),
   },
-  retryButtonText: { color: '#FFFFFF', fontSize: fs(15), fontWeight: '600' },
+  retryText: { color: WHITE, fontSize: fs(12), fontWeight: '700' },
 });
 
 export default VehicleSelection;

@@ -103,26 +103,26 @@ const Support = () => {
       onPress: () => Alert.alert('Coming Soon', 'Live chat will be available soon.'),
     },
     {
-      id: 2, title: 'Call Us',
+      id: 2, title: 'Call Support',
       icon: 'phone',
       desc: '+91 90900 29996',
-      badge: '24 / 7', badgeColor: COLORS.green,
+      badge: '10:00 AM - 7 PM', badgeColor: COLORS.green,
       accent: COLORS.green, light: COLORS.greenLight,
       onPress: () => Linking.openURL('tel:+919090029996'),
     },
     {
-      id: 3, title: 'Email Support',
+      id: 3, title: 'Email Us',
       icon: 'mail-outline',
-      desc: 'supportzipto@gmail.com',
-      badge: '< 4 hrs', badgeColor: COLORS.amber,
+      desc: 'support@ridezipto.com',
+      badge: '24/7', badgeColor: COLORS.amber,
       accent: COLORS.amber, light: COLORS.amberLight,
       onPress: () => Linking.openURL('mailto:support@ridezipto.com'),
     },
     {
       id: 4, title: 'WhatsApp',
       icon: 'message',
-      desc: 'Message us directly',
-      badge: 'Instant', badgeColor: COLORS.whatsapp,
+      desc: 'Tap to Chat',
+      badge: 'Quick Response', badgeColor: COLORS.whatsapp,
       accent: COLORS.whatsapp, light: COLORS.whatsappLt,
       onPress: () => Linking.openURL('https://wa.me/919090029996'),
     },
@@ -130,13 +130,13 @@ const Support = () => {
 
   const quickHelp = [
     { id: 1, icon: 'help-outline',  title: 'Help Center',  desc: 'FAQs & guides',  accent: COLORS.purple, light: COLORS.purpleLight },
-    { id: 2, icon: 'flag',          title: 'Report Issue', desc: 'Flag a problem', accent: COLORS.rose,   light: COLORS.roseLight  },
+    { id: 2, icon: 'flag',          title: 'Report a Problem', desc: 'Flag a problem', accent: COLORS.rose,   light: COLORS.roseLight  },
     { id: 3, icon: 'rate-review',   title: 'Feedback',     desc: 'Share thoughts', accent: COLORS.pink,   light: COLORS.pinkLight  },
   ];
 
   const hours = [
-    { label: 'Monday – Friday',   value: '9:00 AM – 8:00 PM' },
-    { label: 'Saturday – Sunday', value: '10:00 AM – 6:00 PM' },
+    { label: 'Monday – Sunday',   value: '10:00 AM – 7:00 PM' },
+    // { label: 'Saturday – Sunday', value: '10:00 AM – 6:00 PM' },
     { label: 'Emergency Line',    value: '24 / 7 Available' },
   ];
 
@@ -253,14 +253,14 @@ const Support = () => {
               </View>
               <View style={styles.addressBlock}>
                 <Text style={styles.addressLine}>Zipto Headquarters</Text>
-                <Text style={styles.addressSub}>123 Business Park, 2nd Floor</Text>
-                <Text style={styles.addressSub}>Chandrasekharpur, Bhubaneswar</Text>
-                <Text style={styles.addressSub}>Odisha – 751001, India</Text>
+                <Text style={styles.addressSub}>Bhubaneswar,Odisha – 751007, India</Text>
+               
+               
               </View>
-              <TouchableOpacity style={styles.directionsBtn} activeOpacity={0.75}>
+              {/* <TouchableOpacity style={styles.directionsBtn} activeOpacity={0.75}>
                 <MaterialIcons name="directions" size={ms(16)} color={COLORS.accent} />
                 <Text style={styles.directionsText}>Get Directions</Text>
-              </TouchableOpacity>
+              </TouchableOpacity> */}
             </View>
           </FadeInView>
 
