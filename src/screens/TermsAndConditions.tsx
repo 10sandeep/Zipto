@@ -52,152 +52,223 @@ const TermsAndConditions = () => {
         >
           <View style={styles.legalContent}>
             <Text style={styles.legalTitle}>Terms and Conditions</Text>
-            <Text style={styles.legalUpdate}>Last updated: January 15, 2026</Text>
+            <Text style={styles.legalUpdate}>Effective: 11 April 2026 · Last updated: 11 April 2026</Text>
 
             <Text style={styles.welcomeText}>
-              Welcome to zipto, Zipto is operated by (Zipto Hyperlogistics Pvt. Ltd).Please read these Terms and Conditions carefully before using our delivery services.
+              These Terms & Conditions constitute a legally binding agreement between you ("User", "Customer") and Zipto Hyperlogistics Pvt. Ltd. ("Zipto", "Company", "We", "Us"). By accessing or using the Zipto Customer Application, website, or services, you agree to be bound by these Terms.
             </Text>
 
+            {/* 1. Company Details */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>1. Acceptance of Terms</Text>
+              <Text style={styles.sectionTitle}>1. Company Details</Text>
               <Text style={styles.sectionText}>
-                By accessing and using Zipto's services, you accept and agree to be bound by the terms and provisions of this agreement. If you do not agree to these terms, please do not use our services.
-              </Text>
-              <Text style={styles.sectionText}>
-                These terms apply to all users of the service, including without limitation users who are browsers, vendors, customers, merchants, and/or contributors of content.
+                Company Name: ZIPTO HYPERLOGISTICS PRIVATE LIMITED{'\n'}
+                Registered Office: 781, Saheed Nagar, 780, Maharishi College Road, Saheed Nagar, Khorda, Bhubaneswar, Orissa, India – 751007{'\n'}
+                Location: Bhubaneswar, Odisha, India
               </Text>
             </View>
 
+            {/* 2. Platform Nature */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>2. Use of Service</Text>
+              <Text style={styles.sectionTitle}>2. Platform Nature</Text>
               <Text style={styles.sectionText}>
-                You agree to use our delivery services only for lawful purposes. You must not use our services:
-              </Text>
-              <Text style={styles.bulletText}>• In any way that breaches any applicable local, national, or international law or regulation</Text>
-              <Text style={styles.bulletText}>• To transmit, or procure the sending of, any unsolicited or unauthorized advertising or promotional material</Text>
-              <Text style={styles.bulletText}>• To knowingly transmit any data or send or upload any material that contains viruses or any other harmful programs</Text>
-              <Text style={styles.bulletText}>• For the delivery of illegal, prohibited, or dangerous items</Text>
-            </View>
-
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>3. Account Responsibilities</Text>
-              <Text style={styles.sectionText}>
-                When you create an account with us, you must provide information that is accurate, complete, and current at all times. Failure to do so constitutes a breach of the Terms.
-              </Text>
-              <Text style={styles.sectionText}>
-                You are responsible for safeguarding the password that you use to access the service and for any activities or actions under your password. You agree not to disclose your password to any third party.
+                Zipto is a technology platform that connects customers with independent delivery partners. Zipto does NOT directly provide delivery services. The Company acts solely as an intermediary facilitating the connection between users and delivery partners.
               </Text>
             </View>
 
+            {/* 3. Eligibility */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>4. Delivery Terms</Text>
+              <Text style={styles.sectionTitle}>3. Eligibility</Text>
+              <Text style={styles.bulletText}>• Must be 18 years of age or older to use our services</Text>
+              <Text style={styles.bulletText}>• Must provide accurate, complete, and current information at all times</Text>
+            </View>
+
+            {/* 4. Services */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>4. Services</Text>
+              <Text style={styles.sectionText}>Zipto enables the following delivery services:</Text>
+              <Text style={styles.bulletText}>• Food delivery</Text>
+              <Text style={styles.bulletText}>• Parcel delivery</Text>
+              <Text style={styles.bulletText}>• Medicine delivery</Text>
+              <Text style={styles.bulletText}>• Goods transportation</Text>
+            </View>
+
+            {/* 5. User Obligations */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>5. User Obligations</Text>
+              <Text style={styles.sectionText}>By using our platform, you agree to:</Text>
+              <Text style={styles.bulletText}>• Provide correct and accurate pickup and delivery details</Text>
+              <Text style={styles.bulletText}>• Properly package items before dispatch</Text>
+              <Text style={styles.bulletText}>• Avoid sending illegal, restricted, or prohibited goods</Text>
               <Text style={styles.sectionText}>
-                Delivery times are estimates and not guaranteed. Zipto will make reasonable efforts to deliver within the estimated timeframe, but delays may occur due to traffic, weather, or other unforeseen circumstances.
-              </Text>
-              <Text style={styles.sectionText}>
-                You must provide accurate delivery addresses. Zipto is not responsible for failed deliveries due to incorrect address information provided by you.
-              </Text>
-              <Text style={styles.sectionText}>
-                The recipient must be available to receive the delivery. If the recipient is unavailable, the delivery agent may attempt to contact you or return the item.
+                You are responsible for safeguarding your account credentials. You agree not to disclose your password or OTP to any third party.
               </Text>
             </View>
 
+            {/* 6. Pricing & Payments */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>5. Payment Terms</Text>
+              <Text style={styles.sectionTitle}>6. Pricing & Payments</Text>
               <Text style={styles.sectionText}>
-                All fees are payable in Indian Rupees (INR). You agree to pay all charges incurred under your account including delivery fees, service charges, and any applicable taxes.
+                All fees are payable in Indian Rupees (INR). Prices are dynamic and may vary based on distance, demand, and other factors. Accepted payment methods include:
               </Text>
+              <Text style={styles.bulletText}>• UPI</Text>
+              <Text style={styles.bulletText}>• Cash</Text>
+              <Text style={styles.bulletText}>• Cash on Delivery (COD)</Text>
               <Text style={styles.sectionText}>
-                Payment can be made through various methods including Cash on Delivery, UPI, Credit/Debit Cards, Net Banking, or Wallet balance.
-              </Text>
-              <Text style={styles.sectionText}>
-                All prices and charges are subject to change without notice. However, changes will not affect orders already placed.
+                All prices and charges are subject to change. However, changes will not affect orders already placed and confirmed.
               </Text>
             </View>
 
+            {/* 7. Cancellation */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>6. Cancellation Policy</Text>
+              <Text style={styles.sectionTitle}>7. Cancellation Policy</Text>
+              <Text style={styles.bulletText}>• Before assignment: Free cancellation, no charges apply</Text>
+              <Text style={styles.bulletText}>• After assignment: Cancellation charges apply</Text>
+              <Text style={styles.bulletText}>• After pickup: Cancellation is not permitted</Text>
+            </View>
+
+            {/* 8. Refunds */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>8. Refund Policy</Text>
+              <Text style={styles.sectionText}>Refunds are applicable only in the following cases:</Text>
+              <Text style={styles.bulletText}>• Failed transactions</Text>
+              <Text style={styles.bulletText}>• Duplicate payments</Text>
+              <Text style={styles.bulletText}>• Cancellation initiated by Zipto</Text>
               <Text style={styles.sectionText}>
-                Orders can be cancelled before pickup without any cancellation charges. Once an order has been picked up by a delivery agent, cancellations may incur fees as follows:
-              </Text>
-              <Text style={styles.bulletText}>• Cancellation after pickup but before delivery: 50% of delivery fee</Text>
-              <Text style={styles.bulletText}>• Multiple cancellations may result in temporary account suspension</Text>
-              <Text style={styles.sectionText}>
-                Refunds for cancelled orders will be processed within 24-48 hours to the original payment method.
+                Refunds will be processed within 5–7 business days to the original payment method.
               </Text>
             </View>
 
+            {/* 9. Prohibited Items */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>7. Prohibited Items</Text>
+              <Text style={styles.sectionTitle}>9. Prohibited Items</Text>
               <Text style={styles.sectionText}>
-                The following items are strictly prohibited from being delivered through our service:
+                Users are strictly prohibited from sending the following items. The user is fully responsible for the contents of their shipment.
               </Text>
-              <Text style={styles.bulletText}>• Illegal drugs, narcotics, or controlled substances</Text>
+
+              <Text style={styles.subSectionTitle}>Illegal Items:</Text>
+              <Text style={styles.bulletText}>• Narcotics, drugs, or controlled substances</Text>
               <Text style={styles.bulletText}>• Weapons, firearms, or explosives</Text>
-              <Text style={styles.bulletText}>• Hazardous materials or dangerous goods</Text>
-              <Text style={styles.bulletText}>• Stolen goods or counterfeit items</Text>
-              <Text style={styles.bulletText}>• Live animals (except as specifically permitted)</Text>
-              <Text style={styles.bulletText}>• Perishable items without proper packaging</Text>
-            </View>
+              <Text style={styles.bulletText}>• Counterfeit or stolen goods</Text>
 
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>8. Limitation of Liability</Text>
-              <Text style={styles.sectionText}>
-                Zipto shall not be liable for any indirect, incidental, special, consequential, or punitive damages, or any loss of profits or revenues, whether incurred directly or indirectly, or any loss of data, use, goodwill, or other intangible losses resulting from:
-              </Text>
-              <Text style={styles.bulletText}>• Your access to or use of or inability to access or use the service</Text>
-              <Text style={styles.bulletText}>• Any conduct or content of any third party on the service</Text>
-              <Text style={styles.bulletText}>• Unauthorized access, use, or alteration of your transmissions or content</Text>
-              <Text style={styles.sectionText}>
-                Our total liability shall not exceed the amount you paid for the specific delivery service.
-              </Text>
-            </View>
+              <Text style={styles.subSectionTitle}>Hazardous Materials:</Text>
+              <Text style={styles.bulletText}>• Flammable or combustible substances</Text>
+              <Text style={styles.bulletText}>• Toxic or corrosive chemicals</Text>
+              <Text style={styles.bulletText}>• Dangerous or biohazardous materials</Text>
 
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>9. Indemnification</Text>
-              <Text style={styles.sectionText}>
-                You agree to indemnify and hold Zipto, its affiliates, officers, agents, and employees harmless from any claim or demand, including reasonable attorneys' fees, made by any third party due to or arising out of your breach of these Terms or your violation of any law or the rights of a third party.
+              <Text style={styles.subSectionTitle}>Restricted Goods:</Text>
+              <Text style={styles.bulletText}>• Cash or currency</Text>
+              <Text style={styles.bulletText}>• Precious items or jewellery without declaration</Text>
+              <Text style={styles.bulletText}>• Alcohol or government-regulated goods</Text>
+
+              <Text style={styles.importantNote}>
+                Violation of this policy may result in immediate account suspension and legal action.
               </Text>
             </View>
 
+            {/* 10. Account & Security */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>10. Modifications to Service</Text>
+              <Text style={styles.sectionTitle}>10. Account & Security</Text>
               <Text style={styles.sectionText}>
-                We reserve the right to modify or discontinue, temporarily or permanently, the service (or any part thereof) with or without notice. You agree that Zipto shall not be liable to you or to any third party for any modification, suspension, or discontinuance of the service.
+                Users are solely responsible for maintaining the confidentiality of their account credentials. Zipto is not liable for any unauthorized access or misuse arising from user negligence.
               </Text>
             </View>
 
+            {/* 11. Third-Party Services */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>11. Governing Law</Text>
+              <Text style={styles.sectionTitle}>11. Third-Party Services</Text>
               <Text style={styles.sectionText}>
-                These Terms shall be governed and construed in accordance with the laws of India, without regard to its conflict of law provisions. Any disputes arising from these Terms will be subject to the exclusive jurisdiction of the courts in Bhubaneswar, Odisha.
+                Zipto may integrate third-party services such as payment gateways and mapping tools to enhance platform functionality. We are not responsible for the performance, availability, or actions of these third-party services.
               </Text>
             </View>
 
+            {/* 12. Limitation of Liability */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>12. Changes to Terms</Text>
+              <Text style={styles.sectionTitle}>12. Limitation of Liability</Text>
               <Text style={styles.sectionText}>
-                We reserve the right to update or change these Terms at any time. We will notify you of any changes by posting the new Terms on this page and updating the "Last updated" date.
+                To the maximum extent permitted by law, Zipto shall not be liable for:
               </Text>
+              <Text style={styles.bulletText}>• Delivery delays caused by traffic, weather, or unforeseen circumstances</Text>
+              <Text style={styles.bulletText}>• Loss or damage due to improper packaging by the user</Text>
+              <Text style={styles.bulletText}>• Errors or losses arising from incorrect information provided by the user</Text>
+              <Text style={styles.bulletText}>• Actions or failures of third-party service providers</Text>
+            </View>
+
+            {/* 13. Indemnification */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>13. Indemnification</Text>
               <Text style={styles.sectionText}>
-                Your continued use of the service after any such changes constitutes your acceptance of the new Terms.
+                You agree to indemnify and hold Zipto, its affiliates, officers, agents, and employees harmless from any claim, damage, or legal cost arising from your misuse of the platform, breach of these Terms, or violation of any applicable law.
               </Text>
             </View>
 
+            {/* 14. Termination */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>13. Contact Information</Text>
+              <Text style={styles.sectionTitle}>14. Termination</Text>
               <Text style={styles.sectionText}>
-                If you have any questions about these Terms, please contact us:
+                Zipto reserves the right to suspend or permanently terminate accounts for:
               </Text>
-              <Text style={styles.contactText}>Email: legal@ridezipto.com</Text>
-              <Text style={styles.contactText}>Phone: +91 90900 29996</Text>
-              <Text style={styles.contactText}>Address: Bhubaneswar, Odisha, 751007</Text>
+              <Text style={styles.bulletText}>• Fraudulent activity</Text>
+              <Text style={styles.bulletText}>• Abusive behaviour towards partners or staff</Text>
+              <Text style={styles.bulletText}>• Violations of these Terms or any applicable policy</Text>
+            </View>
+
+            {/* 15. Intellectual Property */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>15. Intellectual Property</Text>
+              <Text style={styles.sectionText}>
+                All content, branding, and technology on the Zipto platform are the exclusive intellectual property of Zipto Hyperlogistics Pvt. Ltd. Unauthorized use is strictly prohibited.
+              </Text>
+            </View>
+
+            {/* 16. Privacy */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>16. Privacy</Text>
+              <Text style={styles.sectionText}>
+                Your use of the Zipto platform is governed by our Privacy Policy. By using our services, you consent to the collection and use of your data as described therein.
+              </Text>
+            </View>
+
+            {/* 17. Force Majeure */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>17. Force Majeure</Text>
+              <Text style={styles.sectionText}>
+                Zipto shall not be held liable for delays or failures caused by events beyond our reasonable control, including natural disasters, government actions, network outages, or other force majeure events.
+              </Text>
+            </View>
+
+            {/* 18. Governing Law */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>18. Governing Law</Text>
+              <Text style={styles.sectionText}>
+                These Terms are governed by and construed in accordance with the laws of India. All disputes arising under these Terms shall be subject to the exclusive jurisdiction of the courts in Bhubaneswar, Odisha.
+              </Text>
+            </View>
+
+            {/* 19. Modification of Terms */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>19. Modification of Terms</Text>
+              <Text style={styles.sectionText}>
+                Zipto may update or modify these Terms at any time without prior notice. Continued use of the platform after changes are posted constitutes your acceptance of the revised Terms.
+              </Text>
+            </View>
+
+            {/* 20. Contact & Grievance */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>20. Contact & Grievance</Text>
+              <Text style={styles.sectionText}>
+                If you have any questions or concerns regarding these Terms, please contact us:
+              </Text>
+              <Text style={styles.contactText}>Email: support@ridezipto.com</Text>
+              <Text style={styles.contactText}>Grievance Officer: Zipto Support Team</Text>
+              <Text style={styles.contactText}>Response Time: Within 48 hours</Text>
+              <Text style={styles.contactText}>Address: Bhubaneswar, Odisha, India</Text>
             </View>
 
             <View style={styles.acknowledgementCard}>
               <MaterialIcons name="info-outline" size={ms(24)} color="#3B82F6" />
               <Text style={styles.acknowledgementText}>
-                By using Zipto's services, you acknowledge that you have read, understood, and agree to be bound by these Terms and Conditions.
+                By using Zipto's services, you acknowledge that you have read, understood, and agree to be bound by these Terms and Conditions. © 2026 Zipto Hyperlogistics Pvt. Ltd.
               </Text>
             </View>
           </View>
@@ -282,6 +353,14 @@ const styles = StyleSheet.create({
     color: '#0F172A',
     marginBottom: scaleH(12),
   },
+  subSectionTitle: {
+    fontSize: fs(15),
+    fontWeight: '600',
+    fontFamily: 'Poppins-Regular',
+    color: '#1E40AF',
+    marginBottom: scaleH(8),
+    marginTop: scaleH(8),
+  },
   sectionText: {
     fontSize: fs(14),
     fontFamily: 'Poppins-Regular',
@@ -296,6 +375,18 @@ const styles = StyleSheet.create({
     lineHeight: fs(14) * 1.7,
     marginBottom: scaleH(8),
     paddingLeft: scaleW(8),
+  },
+  importantNote: {
+    fontSize: fs(14),
+    fontFamily: 'Poppins-Regular',
+    color: '#16A34A',
+    lineHeight: fs(14) * 1.6,
+    marginTop: scaleH(12),
+    padding: ms(12),
+    backgroundColor: '#F0FDF4',
+    borderRadius: ms(8),
+    borderLeftWidth: 3,
+    borderLeftColor: '#16A34A',
   },
   contactText: {
     fontSize: fs(14),
