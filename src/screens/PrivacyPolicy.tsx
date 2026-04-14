@@ -206,7 +206,7 @@ const PrivacyPolicy = () => {
               <Text style={styles.contactText}>Email: support@ridezipto.com</Text>
               <Text style={styles.contactText}>Grievance Officer: Zipto Support Team</Text>
               <Text style={styles.contactText}>Response Time: Within 48 hours</Text>
-              <Text style={styles.contactText}>Address: Bhubaneswar, Odisha, India</Text>
+              <Text style={styles.contactText}>Address: 781,Maharishi College Road,Saheed Nagar,Khordha, Bhubaneswar, Odisha, India,751007</Text>
             </View>
 
             <View style={styles.acknowledgementCard}>
